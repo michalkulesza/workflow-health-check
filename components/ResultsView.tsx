@@ -1,9 +1,14 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import type { ReportResult, Scenario } from '@/lib/types'
-import { createMockServices } from '@/lib/mock-services'
+
 import { QUESTIONNAIRE_ID } from '@/lib/fixtures'
+import { createMockServices } from '@/lib/mock-services'
+import type { ReportResult, Scenario } from '@/lib/types'
+
+import { ContactStep } from './ContactStep'
+
+type ResultsStep = 'results' | 'contact' | 'confirmation'
 
 export const ResultsView = ({
   result,
@@ -14,30 +19,20 @@ export const ResultsView = ({
   scenario?: Scenario
   reportLink?: boolean
 }) => {
-  const services = createMockServices(QUESTIONNAIRE_ID)
-  const [contactOpen, setContactOpen] = useState(false)
-  const [contactDone, setContactDone] = useState(false)
-  const [contactError, setContactError] = useState('')
+  const [services] = useState(() => createMockServices(QUESTIONNAIRE_ID))
+  const [step, setStep] = useState<ResultsStep>('results')
 
   const [notifyState, setNotifyState] = useState<'idle' | 'done' | 'error'>(
     'idle'
   )
-  const contact = useForm<{ email: string; name: string; message: string }>()
   const notify = useForm<{ email: string }>()
+  const confirmationHeading = useRef<HTMLHeadingElement>(null)
 
-  const submitContact = contact.handleSubmit(async (data) => {
-    const shouldFail = scenario === 'contact-error' && !contactError
-    setContactError('')
-
-    try {
-      await services.submitContact(data, shouldFail)
-      setContactDone(true)
-    } catch {
-      setContactError(
-        'We couldn’t save your request. Your details are still here—please try again.'
-      )
+  useEffect(() => {
+    if (step === 'confirmation') {
+      confirmationHeading.current?.focus()
     }
-  })
+  }, [step])
 
   const submitNotify = notify.handleSubmit(async (data) => {
     const shouldFail =
@@ -51,6 +46,31 @@ export const ResultsView = ({
       setNotifyState('error')
     }
   })
+
+  if (step === 'contact') {
+    return (
+      <ContactStep
+        scenario={scenario}
+        onBack={() => setStep('results')}
+        onComplete={() => setStep('confirmation')}
+      />
+    )
+  }
+
+  if (step === 'confirmation') {
+    return (
+      <main className="confirmation-step narrow center" role="status">
+        <p className="eyebrow">Request received</p>
+        <h1 ref={confirmationHeading} tabIndex={-1}>
+          Thanks—your request has been recorded.
+        </h1>
+        <p className="lede">
+          You can close this page or return to your workflow results.
+        </p>
+        <button onClick={() => setStep('results')}>Return to results</button>
+      </main>
+    )
+  }
 
   return (
     <main className="results narrow">
@@ -152,52 +172,7 @@ export const ResultsView = ({
           If you’d like support turning these findings into a practical change,
           send a note. This is optional.
         </p>
-        {!contactOpen && !contactDone && (
-          <button onClick={() => setContactOpen(true)}>Request help</button>
-        )}
-        {contactDone ? (
-          <div className="confirmation" role="status">
-            <strong>Thanks—your request has been recorded.</strong>
-            <p>You can close this page or keep a copy of your results.</p>
-          </div>
-        ) : (
-          contactOpen && (
-            <form onSubmit={submitContact} noValidate>
-              <div className="form-grid">
-                <label>
-                  Email <span>Required</span>
-                  <input
-                    type="email"
-                    {...contact.register('email', {
-                      required: 'Enter your email address.',
-                      pattern: {
-                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                        message: 'Enter a valid email address.',
-                      },
-                    })}
-                  />
-                  {contact.formState.errors.email && (
-                    <small className="error">
-                      {contact.formState.errors.email.message}
-                    </small>
-                  )}
-                </label>
-                <label>
-                  Name <span>Optional</span>
-                  <input {...contact.register('name')} />
-                </label>
-              </div>
-              <label>
-                What would you like help with? <span>Optional</span>
-                <textarea rows={4} {...contact.register('message')} />
-              </label>
-              {contactError && <p className="error">{contactError}</p>}
-              <button disabled={contact.formState.isSubmitting}>
-                {contact.formState.isSubmitting ? 'Sending…' : 'Send request'}
-              </button>
-            </form>
-          )
-        )}
+        <button onClick={() => setStep('contact')}>Request help</button>
       </section>
     </main>
   )

@@ -135,12 +135,13 @@ Include fixtures for:
 
 ### 8. Contact CTA and confirmation
 
+- The results CTA opens a separate full-screen contact step rather than expanding a small form inside the results page. Provide a clear way back to the unchanged results.
 - CTA copy is configurable; the paid offer is not decided. Do not add checkout, calendar booking, prices, or a fixed service package.
 - Required email; optional name; optional message.
 - The request is associated with the assessment.
 - Show validation, submitting, success, and recoverable failure states. Prevent duplicates while submitting.
 - Production will create a New lead in Payload. Prototype this with a mock adapter/local fixture; do not build an admin pipeline UI in this step.
-- Confirmation should acknowledge the request without promising an unagreed response time.
+- Confirmation is a separate full-screen state. It should acknowledge the request without promising an unagreed response time and allow the visitor to return to their results.
 
 ## Full initial questionnaire fixture
 
@@ -336,6 +337,8 @@ categoryPoints = categoryNormalizedScore * category.maxPoints
 Use interfaces/adapters for loading landing content, loading a questionnaire definition, saving answers, retrieving progress, submitting analysis, receiving clarification/results, requesting notification, and submitting contact. The adapters are local mocks now and replaceable later.
 
 Provide named scenarios through a developer-only fixture route/control or documented setup. This is a prototype review aid, not the dedicated production test mode the owner explicitly declined.
+
+Provide an environment-controlled developer scoring view (`NEXT_PUBLIC_SCORING_DEBUG=true`) that shows each question's selected inputs, configured strategy and formula, normalized score, and current point contribution. Keep it disabled by default and visually separate from the customer experience. Unscored context and the grouped Q11–Q13 AI rubric must be identified honestly rather than given invented per-question points.
 
 | Scenario | Required demonstration |
 | --- | --- |

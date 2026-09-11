@@ -17,6 +17,7 @@ import { formatAnswerForReview } from '@/lib/formatAnswerForReview'
 import type { Answer, Progress, ReportResult, Scenario } from '@/lib/types'
 import { QuestionField } from './QuestionField'
 import { ResultsView } from './ResultsView'
+import { ScoringDebugPanel } from './ScoringDebugPanel'
 
 type Screen = 'question' | 'review' | 'processing' | 'clarification' | 'results'
 const validScenarios = new Set(Object.keys(scenarioLabels))
@@ -390,6 +391,7 @@ export const Assessment = ({
             </section>
           )
         })}
+        <ScoringDebugPanel answers={progress.answers} />
         <div className="submit-bar">
           <div>
             <strong>Ready for your workflow check?</strong>
@@ -460,6 +462,10 @@ export const Assessment = ({
       <button className="reset-link" onClick={reset}>
         Reset prototype progress
       </button>
+      <ScoringDebugPanel
+        answers={progress.answers}
+        currentQuestionId={question.id}
+      />
     </main>
   )
 }

@@ -91,6 +91,12 @@ test('notification and contact failures retain recoverable forms', async ({
   await page.goto(`${q}?scenario=contact-error`)
   await page.getByRole('button', { name: 'See my results' }).click()
   await page.getByRole('button', { name: 'Request help' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: 'Tell us where you’d like help' })
+  ).toBeVisible()
+
+  await expect(page.getByText('Priority 1', { exact: true })).toHaveCount(0)
   await page.getByLabel(/^Email/).fill('review@example.test')
   await page.getByLabel(/^Name/).fill('Prototype Reviewer')
   await page.getByRole('button', { name: 'Send request' }).click()
@@ -98,6 +104,10 @@ test('notification and contact failures retain recoverable forms', async ({
   await expect(page.getByLabel(/^Name/)).toHaveValue('Prototype Reviewer')
   await page.getByRole('button', { name: 'Send request' }).click()
   await expect(page.getByText(/request has been recorded/i)).toBeVisible()
+
+  await expect(
+    page.getByRole('button', { name: 'Return to results' })
+  ).toBeVisible()
 })
 
 test('report links show ready and expired states', async ({ page }) => {

@@ -14,6 +14,7 @@ export default tseslint.config(
       'coverage',
       'node_modules',
       'next-env.d.ts',
+      'app/(payload)/admin/importMap.js',
       'playwright-report',
       'test-results',
     ],
