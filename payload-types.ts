@@ -68,6 +68,10 @@ export interface Config {
   blocks: {};
   collections: {
     admins: Admin;
+    questionnaires: Questionnaire;
+    'questionnaire-versions': QuestionnaireVersion;
+    submissions: Submission;
+    answers: Answer;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -77,6 +81,10 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     admins: AdminsSelect<false> | AdminsSelect<true>;
+    questionnaires: QuestionnairesSelect<false> | QuestionnairesSelect<true>;
+    'questionnaire-versions': QuestionnaireVersionsSelect<false> | QuestionnaireVersionsSelect<true>;
+    submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
+    answers: AnswersSelect<false> | AnswersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -147,6 +155,87 @@ export interface Admin {
     | null;
   password?: string | null;
   collection: 'admins';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "questionnaires".
+ */
+export interface Questionnaire {
+  id: number;
+  name: string;
+  publicId: string;
+  currentPublishedVersion?: (number | null) | QuestionnaireVersion;
+  draftVersion?: (number | null) | QuestionnaireVersion;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "questionnaire-versions".
+ */
+export interface QuestionnaireVersion {
+  id: number;
+  questionnaire: number | Questionnaire;
+  versionNumber: number;
+  status: 'draft' | 'published';
+  definition:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  contentHash: string;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "submissions".
+ */
+export interface Submission {
+  id: number;
+  externalId: string;
+  questionnaireVersion: number | QuestionnaireVersion;
+  state: 'in_progress' | 'submitted' | 'processing' | 'awaiting_clarification' | 'ready' | 'partial' | 'failed';
+  revision: number;
+  currentStep: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "answers".
+ */
+export interface Answer {
+  id: number;
+  submission: number | Submission;
+  questionKey: string;
+  state: 'answered' | 'skipped';
+  selectedOptionKeys:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  text?: string | null;
+  optionText:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -263,10 +352,27 @@ export interface PayloadJob {
  */
 export interface PayloadLockedDocument {
   id: number;
-  document?: {
-    relationTo: 'admins';
-    value: number | Admin;
-  } | null;
+  document?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'questionnaires';
+        value: number | Questionnaire;
+      } | null)
+    | ({
+        relationTo: 'questionnaire-versions';
+        value: number | QuestionnaireVersion;
+      } | null)
+    | ({
+        relationTo: 'submissions';
+        value: number | Submission;
+      } | null)
+    | ({
+        relationTo: 'answers';
+        value: number | Answer;
+      } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'admins';
@@ -330,6 +436,59 @@ export interface AdminsSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "questionnaires_select".
+ */
+export interface QuestionnairesSelect<T extends boolean = true> {
+  name?: T;
+  publicId?: T;
+  currentPublishedVersion?: T;
+  draftVersion?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "questionnaire-versions_select".
+ */
+export interface QuestionnaireVersionsSelect<T extends boolean = true> {
+  questionnaire?: T;
+  versionNumber?: T;
+  status?: T;
+  definition?: T;
+  contentHash?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "submissions_select".
+ */
+export interface SubmissionsSelect<T extends boolean = true> {
+  externalId?: T;
+  questionnaireVersion?: T;
+  state?: T;
+  revision?: T;
+  currentStep?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "answers_select".
+ */
+export interface AnswersSelect<T extends boolean = true> {
+  submission?: T;
+  questionKey?: T;
+  state?: T;
+  selectedOptionKeys?: T;
+  text?: T;
+  optionText?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -300,7 +300,7 @@ Follow repository instructions for feature work: branch/worktree, a concrete tas
 | 13 | Docker, CI, migrations, observability, backup/retention controls | Production build, integration tests, compose smoke test, restart recovery, restore rehearsal and secrets review |
 | 14 | Preview verification and initial launch checklist | No mock endpoints/scoring debug exposed; access/failure/a11y checks; explicit remaining risks and launch distribution plan |
 
-Current implementation status: task 1 (Payload/PostgreSQL compatibility spike) and task 2 (shared contracts and adapter boundary) are verified complete. Task 3 is the next bounded implementation task.
+Current implementation status: tasks 1 (Payload/PostgreSQL compatibility spike), 2 (shared contracts and adapter boundary), and 3 (PostgreSQL/Payload collection foundations and migration workflow) are verified complete. Task 4 is the next bounded implementation task.
 
 For each task: define a small acceptance set, run targeted checks, inspect the diff, and fix failures before proceeding. Suggested loop bound is three implement/check iterations before reassessing persistent failures. Do not merge, deploy, send messages, or purchase services solely because they appear in this plan.
 
