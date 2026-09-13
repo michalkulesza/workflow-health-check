@@ -9,6 +9,12 @@ export const Submissions: CollectionConfig = {
   fields: [
     { name: 'externalId', type: 'text', required: true, unique: true },
     {
+      name: 'session',
+      type: 'relationship',
+      relationTo: 'anonymous-sessions',
+      required: true,
+    },
+    {
       name: 'questionnaireVersion',
       type: 'relationship',
       relationTo: 'questionnaire-versions',

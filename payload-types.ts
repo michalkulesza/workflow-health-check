@@ -68,10 +68,12 @@ export interface Config {
   blocks: {};
   collections: {
     admins: Admin;
+    'anonymous-sessions': AnonymousSession;
     questionnaires: Questionnaire;
     'questionnaire-versions': QuestionnaireVersion;
     submissions: Submission;
     answers: Answer;
+    'answer-mutations': AnswerMutation;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -81,10 +83,12 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     admins: AdminsSelect<false> | AdminsSelect<true>;
+    'anonymous-sessions': AnonymousSessionsSelect<false> | AnonymousSessionsSelect<true>;
     questionnaires: QuestionnairesSelect<false> | QuestionnairesSelect<true>;
     'questionnaire-versions': QuestionnaireVersionsSelect<false> | QuestionnaireVersionsSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     answers: AnswersSelect<false> | AnswersSelect<true>;
+    'answer-mutations': AnswerMutationsSelect<false> | AnswerMutationsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -162,6 +166,19 @@ export interface Admin {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "anonymous-sessions".
+ */
+export interface AnonymousSession {
+  id: number;
+  tokenHash: string;
+  csrfTokenHash: string;
+  expiresAt: string;
+  lastSeenAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "questionnaires".
  */
 export interface Questionnaire {
@@ -236,6 +253,7 @@ export interface QuestionnaireVersion {
 export interface Submission {
   id: number;
   externalId: string;
+  session: number | AnonymousSession;
   questionnaireVersion: number | QuestionnaireVersion;
   state: 'in_progress' | 'submitted' | 'processing' | 'awaiting_clarification' | 'ready' | 'partial' | 'failed';
   revision: number;
@@ -271,6 +289,19 @@ export interface Answer {
     | number
     | boolean
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "answer-mutations".
+ */
+export interface AnswerMutation {
+  id: number;
+  submission: number | Submission;
+  mutationId: string;
+  payloadHash: string;
+  resultRevision: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -395,6 +426,10 @@ export interface PayloadLockedDocument {
         value: number | Admin;
       } | null)
     | ({
+        relationTo: 'anonymous-sessions';
+        value: number | AnonymousSession;
+      } | null)
+    | ({
         relationTo: 'questionnaires';
         value: number | Questionnaire;
       } | null)
@@ -409,6 +444,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'answers';
         value: number | Answer;
+      } | null)
+    | ({
+        relationTo: 'answer-mutations';
+        value: number | AnswerMutation;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -476,6 +515,18 @@ export interface AdminsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "anonymous-sessions_select".
+ */
+export interface AnonymousSessionsSelect<T extends boolean = true> {
+  tokenHash?: T;
+  csrfTokenHash?: T;
+  expiresAt?: T;
+  lastSeenAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "questionnaires_select".
  */
 export interface QuestionnairesSelect<T extends boolean = true> {
@@ -536,6 +587,7 @@ export interface QuestionnaireVersionsSelect<T extends boolean = true> {
  */
 export interface SubmissionsSelect<T extends boolean = true> {
   externalId?: T;
+  session?: T;
   questionnaireVersion?: T;
   state?: T;
   revision?: T;
@@ -554,6 +606,18 @@ export interface AnswersSelect<T extends boolean = true> {
   selectedOptionKeys?: T;
   text?: T;
   optionText?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "answer-mutations_select".
+ */
+export interface AnswerMutationsSelect<T extends boolean = true> {
+  submission?: T;
+  mutationId?: T;
+  payloadHash?: T;
+  resultRevision?: T;
   updatedAt?: T;
   createdAt?: T;
 }

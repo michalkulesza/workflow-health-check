@@ -1,0 +1,50 @@
+import { getPayload } from 'payload'
+
+import config from '@/payload.config'
+import { getRequestSession } from '@/server/assessment/ownership'
+import { toSubmissionDTO } from '@/server/assessment/submission'
+
+type Props = { params: Promise<{ id: string }> }
+
+export const GET = async (request: Request, { params }: Props) => {
+  const payload = await getPayload({ config })
+  const session = await getRequestSession(payload, request)
+
+  if (!session) {
+    return Response.json(null, { headers: { 'Cache-Control': 'no-store' } })
+  }
+
+  const { id } = await params
+
+  const submissions = await payload.find({
+    collection: 'submissions',
+    where: {
+      and: [
+        { session: { equals: session.id } },
+        { state: { equals: 'in_progress' } },
+      ],
+    },
+    sort: '-updatedAt',
+    limit: 20,
+    depth: 0,
+    overrideAccess: true,
+  })
+
+  const candidates = await Promise.all(
+    submissions.docs.map(async (candidate) =>
+      toSubmissionDTO({ payload, submission: candidate })
+    )
+  )
+
+  const submission = candidates.find(
+    (candidate) => candidate.questionnaireId === id
+  )
+
+  if (!submission) {
+    return Response.json(null, { headers: { 'Cache-Control': 'no-store' } })
+  }
+
+  return Response.json(submission, {
+    headers: { 'Cache-Control': 'no-store' },
+  })
+}

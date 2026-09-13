@@ -5,7 +5,9 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import { buildConfig } from 'payload'
 
 import { Admins } from './server/collections/Admins'
+import { AnonymousSessions } from './server/collections/AnonymousSessions'
 import { Answers } from './server/collections/Answers'
+import { AnswerMutations } from './server/collections/AnswerMutations'
 import { Questionnaires } from './server/collections/Questionnaires'
 import { QuestionnaireVersions } from './server/collections/QuestionnaireVersions'
 import { Submissions } from './server/collections/Submissions'
@@ -32,10 +34,12 @@ export default buildConfig({
   admin: { user: 'admins', importMap: { baseDir } },
   collections: [
     Admins,
+    AnonymousSessions,
     Questionnaires,
     QuestionnaireVersions,
     Submissions,
     Answers,
+    AnswerMutations,
   ],
   globals: [LandingPage],
   endpoints: [
