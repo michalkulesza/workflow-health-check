@@ -151,3 +151,10 @@ Do not set arbitrary conversion targets before observing an initial baseline. At
 - [ ] In Step 3, prototype the landing page and questionnaire journey, including mobile, loading, validation, saving errors, AI clarification/failure, no-major-issues results, and contact confirmation.
 - [ ] In V2, apply the user's planned Figma designs across the public experience.
 - [ ] Consolidate the final master plan after Step 2 decisions, with subsequent steps and explicit release gates.
+
+### Preview and initial-launch verification
+
+- [ ] Run the configured-preview browser smoke suite with `E2E_BASE_URL` and a published `E2E_QUESTIONNAIRE_ID`; record accessibility, noindex, private-access, and invalid-report-token results.
+- [ ] Exercise save/resume, submit, clarification or AI fallback, notification, contact CTA, and worker restart recovery against the preview.
+- [ ] Record the Docker Compose migration/restart check and an isolated database backup-restore rehearsal.
+- [ ] Verify the sending domain, production secrets, backup destination, and named launch operator before inviting the first cohort.

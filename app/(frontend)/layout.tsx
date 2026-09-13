@@ -19,7 +19,9 @@ const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
           <span className="quiet">A practical workflow assessment</span>
         </header>
         {children}
-        <footer>Workflow Check · Prototype for creative professionals</footer>
+        <footer>
+          Workflow Check · A practical assessment for creative professionals
+        </footer>
       </body>
     </html>
   )

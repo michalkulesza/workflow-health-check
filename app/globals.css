@@ -194,30 +194,6 @@ button:disabled {
   color: var(--accent);
   font-weight: bold;
 }
-.scenario-panel {
-  margin-top: 70px;
-  border-top: 1px solid var(--line);
-  padding-top: 25px;
-  color: var(--muted);
-}
-.scenario-panel summary {
-  cursor: pointer;
-  color: var(--ink);
-  font-weight: bold;
-}
-.scenario-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.scenario-links a {
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  background: #fff;
-  color: var(--ink);
-  text-decoration: none;
-  font-size: 13px;
-}
 .progress-row {
   display: flex;
   justify-content: space-between;
@@ -531,79 +507,6 @@ textarea {
 .confirmation-step {
   min-height: 75dvh;
 }
-.scoring-debug {
-  margin-top: 55px;
-  padding: 24px;
-  border: 2px dashed #674c9b;
-  background: #f4efff;
-  color: #241b35;
-}
-.scoring-debug-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 18px;
-  margin-bottom: 18px;
-}
-.scoring-debug-heading span {
-  color: #674c9b;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-}
-.scoring-debug h2 {
-  margin: 3px 0 0;
-  font-size: 25px;
-}
-.scoring-debug code {
-  padding: 3px 6px;
-  background: #e7ddfa;
-  font-size: 12px;
-}
-.scoring-debug-rows {
-  display: grid;
-  gap: 12px;
-}
-.scoring-debug-rows article {
-  padding: 16px;
-  background: var(--white);
-  border: 1px solid #d2c4ec;
-}
-.scoring-debug-title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.scoring-debug-title span {
-  color: var(--muted);
-}
-.scoring-debug dl,
-.scoring-debug dd {
-  margin: 0;
-}
-.scoring-debug dl {
-  display: grid;
-  grid-template-columns: 1fr 2fr 0.7fr 0.9fr;
-  gap: 12px;
-}
-.scoring-debug dt {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.scoring-debug dd {
-  margin-top: 4px;
-  overflow-wrap: anywhere;
-}
-.scoring-debug > p {
-  margin: 16px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-}
 .center {
   text-align: center;
   padding-top: 140px;
@@ -704,16 +607,6 @@ footer {
   }
   .inline-form {
     flex-direction: column;
-  }
-  .scoring-debug-heading {
-    display: block;
-  }
-  .scoring-debug-heading > code {
-    display: inline-block;
-    margin-top: 10px;
-  }
-  .scoring-debug dl {
-    grid-template-columns: 1fr;
   }
   .processing h1 {
     font-size: 38px;

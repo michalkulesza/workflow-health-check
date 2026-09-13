@@ -1,6 +1,6 @@
 # Step 4: Backend design and implementation plan
 
-Status: technical proposal for review, not an implemented backend. Existing product agreements remain authoritative; defaults marked **proposed** are recommendations rather than previously approved decisions. Keep this document current during implementation, then move it to `docs/specs/done/` after verification, as required by `general.md`.
+Status: design and implementation record. Tasks 1–12 are implemented to the extent recorded below; production-style Compose, preview, recovery, and launch verification remain outstanding. Existing product agreements remain authoritative; defaults marked **proposed** are recommendations rather than previously approved decisions. Keep this document current during implementation, then move it to `docs/specs/done/` after all verification, as required by `general.md`.
 
 ## 1. Objective and scope
 
@@ -26,14 +26,12 @@ The repository already contains a Next.js prototype, React Hook Form, Zod, Vites
 
 Relevant boundaries:
 
-- `lib/mock-services.ts`: landing/questionnaire reads, browser-local progress, analysis, notification, and contact mocks.
 - `lib/types.ts`: useful starting domain types, but too narrow for asynchronous backend processing, validation configuration, and grouped scoring.
 - `lib/scoring.ts`: hard-coded denominator 16.5, count divisor 10, quality weights/curve, head option ID, and coverage 0.6. These must become configuration; existing calculations provide regression examples.
 - `lib/fixtures.ts`: initial content to transform into an idempotent development/initial-publication seed.
-- `lib/scoringDebug.ts` and scenario controls: development aids; remove or exclude production exposure of scoring internals and fixture results.
 - Existing components and CSS are actively changing. Avoid unrelated UI edits. Introduce contracts/adapters first, then coordinate the minimal integration changes.
 
-The existing `PrototypeServices` is not a drop-in production contract: progress loading is synchronous and analysis takes a scenario flag. Replace these assumptions with async reads, submission identity, job status, and validated HTTP responses. Never transmit `scenario` or artificial failure flags as production API controls.
+Prototype-only mock services, scenario controls, fixture report tokens, and client-side scoring-debug output were removed during Task 14. Production browser requests use async HTTP contracts with submission identity, job status, and validated responses; never transmit artificial failure flags as production API controls.
 
 ## 3. Architecture
 
@@ -300,6 +298,14 @@ Follow repository instructions for feature work: branch/worktree, a concrete tas
 | 13 | Docker, CI, migrations, observability, backup/retention controls | Production build, integration tests, compose smoke test, restart recovery, restore rehearsal and secrets review |
 | 14 | Preview verification and initial launch checklist | No mock endpoints/scoring debug exposed; access/failure/a11y checks; explicit remaining risks and launch distribution plan |
 
+### Task 14 implementation record (2026-09-13)
+
+- [x] Removed the public prototype report-token bypass, client-visible scoring-debug flag/component, unused mock service, and their prototype-only styles.
+- [x] Replaced scenario-driven Playwright coverage with an opt-in preview smoke suite. It requires both `E2E_BASE_URL` and a real published `E2E_QUESTIONNAIRE_ID`, checks noindex metadata, accessibility, mobile overflow, absence of prototype controls, unauthenticated private access, no-store caching, and arbitrary report-token failure.
+- [x] Documented the configured-preview command, manual release checks, remaining operational risks, and an initial invited-cohort distribution plan in `README.md`.
+- [ ] Run the smoke suite against a configured preview with its web, worker, PostgreSQL, Gemini, and Resend settings. This cannot be truthfully marked complete from an unconfigured local checkout.
+- [ ] Record the Docker Compose migration/restart and isolated backup-restore rehearsal, verify the sender/domain and secrets, and name the launch operator before inviting the first cohort.
+
 Current implementation status: tasks 1 (Payload/PostgreSQL compatibility spike), 2 (shared contracts and adapter boundary), 3 (PostgreSQL/Payload collection foundations and migration workflow), 4 (CMS content and atomic publication service), 5 (anonymous sessions and save/resume endpoints), 6 (config-driven deterministic engine and coverage), 7 (submit snapshots, transactional outbox, and durable deterministic-worker lifecycle), and 8 (Gemini adapter, grouped evaluation, and one clarification) are verified complete. Task 9 (category aggregation, grounded narrative, and report API) is implemented and unit/type/lint verified; its production build remains environment-gated by the required Payload secret. Task 10 (notification requests, report grants, and Resend delivery outbox) is implemented and unit/type/lint verified. Task 11 (lead capture and the admin pipeline) is implemented and unit/type/lint verified; its production build remains environment-gated by the required Payload secret. Task 12 connects the public UI to the production HTTP adapter, including session creation, save/resume, submission/report polling, clarification, notification, lead capture, and report-link exchange; unit/type/lint checks pass. Task 13 adds the production Compose topology, explicit migration service, CI gates, health/worker-heartbeat checks, backup/restore rehearsal commands, and guarded retention purge controls; compose/runtime verification remains required. Browser verification requires the configured Payload/PostgreSQL environment.
 
 For each task: define a small acceptance set, run targeted checks, inspect the diff, and fix failures before proceeding. Suggested loop bound is three implement/check iterations before reassessing persistent failures. Do not merge, deploy, send messages, or purchase services solely because they appear in this plan.
@@ -312,7 +318,7 @@ For each task: define a small acceptance set, run targeted checks, inspect the d
 - Worker fault tests: crash before/after provider call, restart with expired lease, duplicate delivery, successful-stage reuse, stopped provider recovery, email uncertainty.
 - Browser tests: real API-backed main journey, reload/resume, publication while unfinished, validation/save failure, clarification, AI fallback/notification and CTA. Retain mobile/keyboard/reduced-motion checks while UI evolves.
 - CI: format/lint/typecheck/unit and integration tests/build with locked dependencies; no real provider calls or live secrets. Provider smoke tests are explicit and separate.
-- Do not interpret a green prototype unit suite as backend verification. The mock response shapes and client-only scoring currently bypass most production failure and access paths.
+- Do not interpret a green unit suite as deployment verification. Mock adapters are confined to contract tests; preview checks must exercise the production HTTP routes, worker, and database.
 
 ## 15. Outstanding review checklist
 
@@ -330,4 +336,6 @@ For each task: define a small acceptance set, run targeted checks, inspect the d
 
 ## 16. Completion boundary
 
-This document provides the proposed Step 4 design and ordered build tasks. Backend implementation, package compatibility proof, live provider checks, production retention approval, deployment, and launch are still outstanding. The owner may continue marketing/UI design independently; backend work should start with tasks 1–3 and preserve the adapter contracts.
+Tasks 1–12 have implementation evidence recorded above. Production Compose verification, live-provider checks, retention approval, backup restoration, preview verification, and launch remain outstanding. Do not treat the code safeguards as authorization to deploy or invite users before the unchecked Task 14 items are recorded.
+
+This document provides the Step 4 design, ordered build tasks, and current implementation record. Production Compose verification, live-provider checks, retention approval, backup restoration, preview verification, and launch remain outstanding. Do not treat the code safeguards as authorization to deploy or invite users before the unchecked Task 14 items are recorded.
