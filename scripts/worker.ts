@@ -2,6 +2,7 @@ import { setTimeout } from 'node:timers/promises'
 
 import { loadPayload } from './payloadRuntime'
 import { dispatchAssessmentOutbox } from '../server/jobs/outbox'
+import { recordWorkerHeartbeat } from '../server/operations/heartbeat'
 
 const main = async () => {
   const payload = await loadPayload()
@@ -17,6 +18,7 @@ const main = async () => {
 
   try {
     do {
+      await recordWorkerHeartbeat(payload)
       const dispatched = await dispatchAssessmentOutbox(payload)
 
       // Trusted local worker; HTTP job execution is denied in payload.config.

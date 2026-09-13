@@ -20,11 +20,15 @@
     "payload:importmap": "payload generate:importmap",
     "db:migrate": "payload migrate",
     "db:migration:create": "payload migrate:create",
+    "db:backup": "tsx scripts/backupDatabase.ts",
+    "db:restore": "tsx scripts/restoreDatabase.ts",
     "db:seed": "tsx scripts/seedFoundation.ts",
     "db:verify:publication": "tsx scripts/verifyPublication.ts",
     "admin:bootstrap": "tsx scripts/bootstrapAdmin.ts",
     "worker": "tsx scripts/worker.ts",
     "worker:once": "tsx scripts/worker.ts --once",
+    "worker:health": "tsx scripts/workerHealthcheck.ts",
+    "retention:purge": "tsx scripts/purgeRetention.ts",
     "job:fixture": "tsx scripts/fixtureJob.ts"
   },
   "dependencies": {

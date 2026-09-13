@@ -11,7 +11,7 @@ Install the locked dependencies with `npm.cmd ci`. The repository includes `comp
 The prerequisite is Docker Desktop (or another Docker Engine) with the Compose v2 plugin running and available as `docker`. Start the disposable database and wait for its health check:
 
 ```powershell
-docker compose --env-file .env.development.local up --detach --wait postgres
+docker compose --env-file .env.development.local -f compose.yaml -f compose.dev.yaml up --detach --wait postgres
 ```
 
 Run the local CLI commands below with `NODE_ENV=development`, which makes their `@next/env` loader use `.env.development.local` just like `next dev` does:
