@@ -11,9 +11,13 @@ import { AnswerMutations } from './server/collections/AnswerMutations'
 import { Questionnaires } from './server/collections/Questionnaires'
 import { QuestionnaireVersions } from './server/collections/QuestionnaireVersions'
 import { Submissions } from './server/collections/Submissions'
+import { ScoringRuns } from './server/collections/ScoringRuns'
+import { ScoringResults } from './server/collections/ScoringResults'
+import { AssessmentOutbox } from './server/collections/AssessmentOutbox'
 import { publishEndpoint } from './server/content/publishEndpoint'
 import { LandingPage } from './server/globals/LandingPage'
 import { fixtureTask } from './server/jobs/fixtureTask'
+import { deterministicScoreTask } from './server/jobs/deterministicScoreTask'
 
 const baseDir = path.dirname(fileURLToPath(import.meta.url))
 const secret = process.env.PAYLOAD_SECRET
@@ -38,6 +42,9 @@ export default buildConfig({
     Questionnaires,
     QuestionnaireVersions,
     Submissions,
+    ScoringRuns,
+    ScoringResults,
+    AssessmentOutbox,
     Answers,
     AnswerMutations,
   ],
@@ -61,7 +68,7 @@ export default buildConfig({
   jobs: {
     access: { run: () => false, queue: () => false, cancel: () => false },
     deleteJobOnComplete: false,
-    tasks: [fixtureTask],
+    tasks: [fixtureTask, deterministicScoreTask],
   },
   typescript: { outputFile: path.join(baseDir, 'payload-types.ts') },
 })

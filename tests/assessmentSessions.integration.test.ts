@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 
 import { publishQuestionnaire } from '@/server/content/publishQuestionnaire'
 import { questionnaireDefinitionSchema } from '@/server/content/definition'
+import { dispatchAssessmentOutbox } from '@/server/jobs/outbox'
 
 const ORIGIN = 'http://assessment.test'
 
@@ -131,6 +132,138 @@ afterAll(async () => {
 })
 
 describe('assessment session routes', () => {
+  it('freezes a submitted snapshot and completes one durable deterministic run', async () => {
+    const owner = await session()
+    const submission = await createSubmission(owner)
+
+    const answer = {
+      answer: {
+        state: 'answered',
+        selectedOptionKeys: ['crm'],
+        text: null,
+        optionText: {},
+      },
+      expectedRevision: 0,
+      mutationId: randomUUID(),
+      questionKey: 'tools',
+      submissionId: submission.submissionId,
+    }
+
+    const { PUT: saveAnswer } =
+      await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/answers/[questionKey]/route')
+
+    const { POST: submit } =
+      await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/submit/route')
+
+    const saved = await saveAnswer(
+      request(
+        `/api/assessment/v1/submissions/${submission.submissionId}/answers/tools`,
+        {
+          body: JSON.stringify(answer),
+          headers: {
+            cookie: owner.cookie,
+            origin: ORIGIN,
+            'x-assessment-csrf': owner.csrfToken,
+          },
+          method: 'PUT',
+        }
+      ),
+      {
+        params: Promise.resolve({
+          id: submission.submissionId,
+          questionKey: 'tools',
+        }),
+      }
+    )
+
+    const submissionInput = {
+      expectedRevision: 1,
+      mutationId: randomUUID(),
+      submissionId: submission.submissionId,
+    }
+
+    const submitRequest = () =>
+      submit(
+        request(
+          `/api/assessment/v1/submissions/${submission.submissionId}/submit`,
+          {
+            body: JSON.stringify(submissionInput),
+            headers: {
+              cookie: owner.cookie,
+              origin: ORIGIN,
+              'x-assessment-csrf': owner.csrfToken,
+            },
+            method: 'POST',
+          }
+        ),
+        { params: Promise.resolve({ id: submission.submissionId }) }
+      )
+    const firstSubmit = await submitRequest()
+    const duplicateSubmit = await submitRequest()
+
+    const frozenWrite = await saveAnswer(
+      request(
+        `/api/assessment/v1/submissions/${submission.submissionId}/answers/tools`,
+        {
+          body: JSON.stringify({
+            ...answer,
+            expectedRevision: 2,
+            mutationId: randomUUID(),
+          }),
+          headers: {
+            cookie: owner.cookie,
+            origin: ORIGIN,
+            'x-assessment-csrf': owner.csrfToken,
+          },
+          method: 'PUT',
+        }
+      ),
+      {
+        params: Promise.resolve({
+          id: submission.submissionId,
+          questionKey: 'tools',
+        }),
+      }
+    )
+
+    expect(saved.status).toBe(200)
+    expect(firstSubmit.status).toBe(202)
+
+    expect(await duplicateSubmit.json()).toEqual(
+      await firstSubmit.clone().json()
+    )
+
+    expect(frozenWrite.status).toBe(409)
+    expect(await dispatchAssessmentOutbox(payload)).toBe(1)
+
+    await payload.jobs.run({
+      queue: 'assessment',
+      limit: 1,
+      overrideAccess: true,
+    })
+
+    const rows = await payload.db.pool.query<{
+      outbox_state: string
+      run_state: string
+      snapshot: { tools: { selectedOptionKeys: string[] } }
+    }>(
+      `SELECT assessment_outbox.state AS outbox_state, scoring_runs.state AS run_state,
+              scoring_runs.answer_snapshot AS snapshot
+         FROM assessment_outbox
+         JOIN scoring_runs ON assessment_outbox.payload->>'runID' = scoring_runs.id::text
+        WHERE scoring_runs.submission_id = (SELECT id FROM submissions WHERE external_id = $1)`,
+      [submission.submissionId]
+    )
+
+    expect(rows.rows).toHaveLength(1)
+
+    expect(rows.rows[0]).toMatchObject({
+      outbox_state: 'completed',
+      run_state: 'deterministic_done',
+      snapshot: { tools: { selectedOptionKeys: ['crm'] } },
+    })
+  })
+
   it('enforces origin and CSRF checks', async () => {
     const { POST } =
       await import('@/app/(frontend)/api/assessment/v1/sessions/route')

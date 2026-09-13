@@ -117,6 +117,14 @@ export const progressMutationInputSchema = z
   })
   .strict()
 
+export const submitSubmissionInputSchema = z
+  .object({
+    submissionId: z.string().uuid(),
+    expectedRevision: revisionSchema,
+    mutationId: mutationIdSchema,
+  })
+  .strict()
+
 export const prioritySchema = z.object({
   categoryKey: stableKeySchema,
   categoryLabel: z.string().min(1).max(160),
@@ -191,6 +199,7 @@ export type CreateSubmissionInput = z.infer<typeof createSubmissionInputSchema>
 export type AnswerMutationInput = z.infer<typeof answerMutationInputSchema>
 export type AnswerMutationResult = z.infer<typeof answerMutationResultSchema>
 export type ProgressMutationInput = z.infer<typeof progressMutationInputSchema>
+export type SubmitSubmissionInput = z.infer<typeof submitSubmissionInputSchema>
 export type Report = z.infer<typeof reportSchema>
 export type NotificationRequest = z.infer<typeof notificationRequestSchema>
 export type ContactRequest = z.infer<typeof contactRequestSchema>

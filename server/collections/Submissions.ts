@@ -49,5 +49,9 @@ export const Submissions: CollectionConfig = {
       defaultValue: 0,
       min: 0,
     },
+    { name: 'submittedSnapshot', type: 'json', admin: { readOnly: true } },
+    { name: 'submittedSnapshotHash', type: 'text', admin: { readOnly: true } },
+    { name: 'submitMutationId', type: 'text', admin: { readOnly: true } },
+    { name: 'submitPayloadHash', type: 'text', admin: { readOnly: true } },
   ],
 }

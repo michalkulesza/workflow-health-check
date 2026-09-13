@@ -53,7 +53,7 @@ export const updateProgressAtomically = async ({
   const result = await payload.db.pool.query<{ revision: string | number }>(
     `UPDATE submissions
        SET current_step = $1, revision = revision + 1, updated_at = now()
-     WHERE id = $2 AND session_id = $3 AND revision = $4
+     WHERE id = $2 AND session_id = $3 AND revision = $4 AND state = 'in_progress'
      RETURNING revision`,
     [currentStep, submissionID, sessionID, expectedRevision]
   )
@@ -116,7 +116,7 @@ export const updateAnswerAtomically = async ({
     const submission = await client.query<{ revision: string | number }>(
       `UPDATE submissions
          SET revision = revision + 1, updated_at = now()
-       WHERE id = $1 AND session_id = $2 AND revision = $3
+       WHERE id = $1 AND session_id = $2 AND revision = $3 AND state = 'in_progress'
        RETURNING revision`,
       [submissionID, sessionID, input.expectedRevision]
     )

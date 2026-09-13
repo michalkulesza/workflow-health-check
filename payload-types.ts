@@ -72,6 +72,9 @@ export interface Config {
     questionnaires: Questionnaire;
     'questionnaire-versions': QuestionnaireVersion;
     submissions: Submission;
+    'scoring-runs': ScoringRun;
+    'scoring-results': ScoringResult;
+    'assessment-outbox': AssessmentOutbox;
     answers: Answer;
     'answer-mutations': AnswerMutation;
     'payload-kv': PayloadKv;
@@ -87,6 +90,9 @@ export interface Config {
     questionnaires: QuestionnairesSelect<false> | QuestionnairesSelect<true>;
     'questionnaire-versions': QuestionnaireVersionsSelect<false> | QuestionnaireVersionsSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
+    'scoring-runs': ScoringRunsSelect<false> | ScoringRunsSelect<true>;
+    'scoring-results': ScoringResultsSelect<false> | ScoringResultsSelect<true>;
+    'assessment-outbox': AssessmentOutboxSelect<false> | AssessmentOutboxSelect<true>;
     answers: AnswersSelect<false> | AnswersSelect<true>;
     'answer-mutations': AnswerMutationsSelect<false> | AnswerMutationsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -113,6 +119,7 @@ export interface Config {
   jobs: {
     tasks: {
       fixture: TaskFixture;
+      'deterministic-score': TaskDeterministicScore;
       inline: {
         input: unknown;
         output: unknown;
@@ -277,6 +284,100 @@ export interface Submission {
   state: 'in_progress' | 'submitted' | 'processing' | 'awaiting_clarification' | 'ready' | 'partial' | 'failed';
   revision: number;
   currentStep: number;
+  submittedSnapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  submittedSnapshotHash?: string | null;
+  submitMutationId?: string | null;
+  submitPayloadHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "scoring-runs".
+ */
+export interface ScoringRun {
+  id: number;
+  submission: number | Submission;
+  questionnaireVersion: number | QuestionnaireVersion;
+  runNumber: number;
+  state: 'queued' | 'processing' | 'deterministic_done' | 'failed';
+  answerSnapshot:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  answerSnapshotHash: string;
+  definitionSnapshot:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  engineVersion: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "scoring-results".
+ */
+export interface ScoringResult {
+  id: number;
+  scoringRun: number | ScoringRun;
+  categoryKey: string;
+  normalized?: number | null;
+  points?: number | null;
+  coverage?: number | null;
+  eligible: boolean;
+  components:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "assessment-outbox".
+ */
+export interface AssessmentOutbox {
+  id: number;
+  workKey: string;
+  type: 'deterministic_score';
+  payload:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  state: 'pending' | 'leased' | 'dispatched' | 'completed';
+  attempts: number;
+  leaseToken?: string | null;
+  leaseExpiresAt?: string | null;
+  payloadJobId?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -393,7 +494,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'fixture';
+        taskSlug: 'inline' | 'fixture' | 'deterministic-score';
         taskID: string;
         input?:
           | {
@@ -426,7 +527,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'fixture') | null;
+  taskSlug?: ('inline' | 'fixture' | 'deterministic-score') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -459,6 +560,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'submissions';
         value: number | Submission;
+      } | null)
+    | ({
+        relationTo: 'scoring-runs';
+        value: number | ScoringRun;
+      } | null)
+    | ({
+        relationTo: 'scoring-results';
+        value: number | ScoringResult;
+      } | null)
+    | ({
+        relationTo: 'assessment-outbox';
+        value: number | AssessmentOutbox;
       } | null)
     | ({
         relationTo: 'answers';
@@ -619,6 +732,57 @@ export interface SubmissionsSelect<T extends boolean = true> {
   state?: T;
   revision?: T;
   currentStep?: T;
+  submittedSnapshot?: T;
+  submittedSnapshotHash?: T;
+  submitMutationId?: T;
+  submitPayloadHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "scoring-runs_select".
+ */
+export interface ScoringRunsSelect<T extends boolean = true> {
+  submission?: T;
+  questionnaireVersion?: T;
+  runNumber?: T;
+  state?: T;
+  answerSnapshot?: T;
+  answerSnapshotHash?: T;
+  definitionSnapshot?: T;
+  engineVersion?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "scoring-results_select".
+ */
+export interface ScoringResultsSelect<T extends boolean = true> {
+  scoringRun?: T;
+  categoryKey?: T;
+  normalized?: T;
+  points?: T;
+  coverage?: T;
+  eligible?: T;
+  components?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "assessment-outbox_select".
+ */
+export interface AssessmentOutboxSelect<T extends boolean = true> {
+  workKey?: T;
+  type?: T;
+  payload?: T;
+  state?: T;
+  attempts?: T;
+  leaseToken?: T;
+  leaseExpiresAt?: T;
+  payloadJobId?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -788,6 +952,19 @@ export interface TaskFixture {
   output: {
     marker: string;
     workerPid: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskDeterministic-score".
+ */
+export interface TaskDeterministicScore {
+  input: {
+    outboxID: number;
+    runID: number;
+  };
+  output: {
+    runID: number;
   };
 }
 /**
