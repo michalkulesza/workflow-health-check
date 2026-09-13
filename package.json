@@ -28,6 +28,7 @@
     "job:fixture": "tsx scripts/fixtureJob.ts"
   },
   "dependencies": {
+    "@google/genai": "^1.52.0",
     "@hookform/resolvers": "^5.2.1",
     "@next/env": "16.3.4",
     "@payloadcms/db-postgres": "3.89.0",

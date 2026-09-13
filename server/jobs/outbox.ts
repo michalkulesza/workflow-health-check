@@ -4,7 +4,12 @@ import type { Payload } from 'payload'
 
 const LEASE_SECONDS = 60
 
-type OutboxWork = { id: number; runID: number; leaseToken: string }
+type OutboxWork = {
+  id: number
+  runID: number
+  leaseToken: string
+  type: 'deterministic_score' | 'ai_evaluation'
+}
 
 const claimWork = async (payload: Payload): Promise<OutboxWork | null> => {
   const client = await payload.db.pool.connect()
@@ -13,9 +18,13 @@ const claimWork = async (payload: Payload): Promise<OutboxWork | null> => {
   try {
     await client.query('BEGIN')
 
-    const work = await client.query<{ id: number; payload: { runID: number } }>(
-      `SELECT id, payload FROM assessment_outbox
-        WHERE type = 'deterministic_score'
+    const work = await client.query<{
+      id: number
+      payload: { runID: number }
+      type: OutboxWork['type']
+    }>(
+      `SELECT id, payload, type FROM assessment_outbox
+        WHERE type IN ('deterministic_score', 'ai_evaluation')
           AND (state = 'pending' OR (state = 'leased' AND lease_expires_at < now()))
         ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1`
     )
@@ -38,7 +47,7 @@ const claimWork = async (payload: Payload): Promise<OutboxWork | null> => {
 
     await client.query('COMMIT')
 
-    return { id: row.id, runID: row.payload.runID, leaseToken }
+    return { id: row.id, runID: row.payload.runID, leaseToken, type: row.type }
   } catch (error) {
     await client.query('ROLLBACK')
     throw error
@@ -55,11 +64,16 @@ export const dispatchAssessmentOutbox = async (
 
   while (work) {
     try {
+      const task =
+        work.type === 'deterministic_score'
+          ? 'deterministic-score'
+          : 'ai-evaluation'
+
       const job = await payload.jobs.queue({
         input: { outboxID: work.id, runID: work.runID },
         overrideAccess: true,
         queue: 'assessment',
-        task: 'deterministic-score',
+        task,
       })
 
       await payload.db.pool.query(

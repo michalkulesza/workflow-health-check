@@ -4,6 +4,7 @@ import * as migration_20260913_123420_anonymous_sessions_save_resume from './202
 import * as migration_20260913_132151_add_scoring_configuration from './20260913_132151_add_scoring_configuration'
 import * as migration_20260913_150000_submit_outbox_worker from './20260913_150000_submit_outbox_worker'
 import * as migration_20260913_150100_payload_lock_relations from './20260913_150100_payload_lock_relations'
+import * as migration_20260913_160000_ai_evaluations from './20260913_160000_ai_evaluations'
 
 export const migrations = [
   {
@@ -35,5 +36,10 @@ export const migrations = [
     up: migration_20260913_150100_payload_lock_relations.up,
     down: migration_20260913_150100_payload_lock_relations.down,
     name: '20260913_150100_payload_lock_relations',
+  },
+  {
+    up: migration_20260913_160000_ai_evaluations.up,
+    down: migration_20260913_160000_ai_evaluations.down,
+    name: '20260913_160000_ai_evaluations',
   },
 ]

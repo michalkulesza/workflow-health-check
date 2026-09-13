@@ -125,6 +125,14 @@ export const submitSubmissionInputSchema = z
   })
   .strict()
 
+export const clarificationResponseInputSchema = z
+  .object({
+    submissionId: z.string().uuid(),
+    evaluationKey: stableKeySchema,
+    response: z.string().trim().min(1).max(4_000),
+  })
+  .strict()
+
 export const prioritySchema = z.object({
   categoryKey: stableKeySchema,
   categoryLabel: z.string().min(1).max(160),
@@ -200,6 +208,9 @@ export type AnswerMutationInput = z.infer<typeof answerMutationInputSchema>
 export type AnswerMutationResult = z.infer<typeof answerMutationResultSchema>
 export type ProgressMutationInput = z.infer<typeof progressMutationInputSchema>
 export type SubmitSubmissionInput = z.infer<typeof submitSubmissionInputSchema>
+export type ClarificationResponseInput = z.infer<
+  typeof clarificationResponseInputSchema
+>
 export type Report = z.infer<typeof reportSchema>
 export type NotificationRequest = z.infer<typeof notificationRequestSchema>
 export type ContactRequest = z.infer<typeof contactRequestSchema>

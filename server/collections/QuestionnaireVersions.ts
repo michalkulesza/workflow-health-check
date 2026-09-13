@@ -11,6 +11,7 @@ const buildDefinition = (data: Record<string, unknown>) =>
     schemaVersion: 1,
     categories: data.categories,
     questions: data.questions,
+    aiEvaluations: data.aiEvaluations,
   })
 
 export const QuestionnaireVersions: CollectionConfig = {
@@ -162,6 +163,15 @@ export const QuestionnaireVersions: CollectionConfig = {
           },
         },
       ],
+    },
+    {
+      name: 'aiEvaluations',
+      type: 'json',
+      defaultValue: [],
+      admin: {
+        description:
+          'Validated grouped AI rubric configuration, including model and prompt versions.',
+      },
     },
     {
       name: 'definition',

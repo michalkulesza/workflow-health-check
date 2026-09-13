@@ -13,7 +13,7 @@ export const AssessmentOutbox: CollectionConfig = {
       name: 'type',
       type: 'select',
       required: true,
-      options: ['deterministic_score'],
+      options: ['deterministic_score', 'ai_evaluation'],
     },
     {
       name: 'payload',

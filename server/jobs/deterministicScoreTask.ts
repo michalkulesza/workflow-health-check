@@ -36,7 +36,14 @@ export const deterministicScoreTask: TaskConfig<{
         throw new Error(`Scoring run ${input.runID} does not exist`)
       }
 
-      if (row.state === 'deterministic_done') {
+      if (
+        [
+          'deterministic_done',
+          'ai_pending',
+          'waiting_for_input',
+          'complete',
+        ].includes(row.state)
+      ) {
         await client.query(
           `UPDATE assessment_outbox SET state = 'completed', updated_at = now()
             WHERE id = $1`,
@@ -79,10 +86,24 @@ export const deterministicScoreTask: TaskConfig<{
         )
       }
 
+      const hasAIEvaluations = definition.aiEvaluations.length > 0
+
+      if (hasAIEvaluations) {
+        await client.query(
+          `INSERT INTO assessment_outbox
+            (work_key, type, payload, state, attempts, updated_at, created_at)
+           VALUES ($1, 'ai_evaluation', $2::jsonb, 'pending', 0, now(), now())
+           ON CONFLICT (work_key) DO NOTHING`,
+          [
+            `ai-evaluation:${input.runID}`,
+            JSON.stringify({ runID: input.runID }),
+          ]
+        )
+      }
+
       await client.query(
-        `UPDATE scoring_runs SET state = 'deterministic_done', updated_at = now()
-          WHERE id = $1`,
-        [input.runID]
+        `UPDATE scoring_runs SET state = $2, updated_at = now() WHERE id = $1`,
+        [input.runID, hasAIEvaluations ? 'ai_pending' : 'deterministic_done']
       )
 
       await client.query(

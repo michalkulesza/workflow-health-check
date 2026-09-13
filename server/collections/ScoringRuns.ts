@@ -25,7 +25,16 @@ export const ScoringRuns: CollectionConfig = {
       name: 'state',
       type: 'select',
       required: true,
-      options: ['queued', 'processing', 'deterministic_done', 'failed'],
+      options: [
+        'queued',
+        'processing',
+        'deterministic_done',
+        'ai_pending',
+        'waiting_for_input',
+        'complete',
+        'partial',
+        'failed',
+      ],
     },
     {
       name: 'answerSnapshot',

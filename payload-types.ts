@@ -120,6 +120,7 @@ export interface Config {
     tasks: {
       fixture: TaskFixture;
       'deterministic-score': TaskDeterministicScore;
+      'ai-evaluation': TaskAiEvaluation;
       inline: {
         input: unknown;
         output: unknown;
@@ -258,6 +259,18 @@ export interface QuestionnaireVersion {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Validated grouped AI rubric configuration, including model and prompt versions.
+   */
+  aiEvaluations?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   definition:
     | {
         [k: string]: unknown;
@@ -308,7 +321,15 @@ export interface ScoringRun {
   submission: number | Submission;
   questionnaireVersion: number | QuestionnaireVersion;
   runNumber: number;
-  state: 'queued' | 'processing' | 'deterministic_done' | 'failed';
+  state:
+    | 'queued'
+    | 'processing'
+    | 'deterministic_done'
+    | 'ai_pending'
+    | 'waiting_for_input'
+    | 'complete'
+    | 'partial'
+    | 'failed';
   answerSnapshot:
     | {
         [k: string]: unknown;
@@ -363,7 +384,7 @@ export interface ScoringResult {
 export interface AssessmentOutbox {
   id: number;
   workKey: string;
-  type: 'deterministic_score';
+  type: 'deterministic_score' | 'ai_evaluation';
   payload:
     | {
         [k: string]: unknown;
@@ -494,7 +515,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'fixture' | 'deterministic-score';
+        taskSlug: 'inline' | 'fixture' | 'deterministic-score' | 'ai-evaluation';
         taskID: string;
         input?:
           | {
@@ -527,7 +548,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'fixture' | 'deterministic-score') | null;
+  taskSlug?: ('inline' | 'fixture' | 'deterministic-score' | 'ai-evaluation') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -715,6 +736,7 @@ export interface QuestionnaireVersionsSelect<T extends boolean = true> {
         scoring?: T;
         id?: T;
       };
+  aiEvaluations?: T;
   definition?: T;
   contentHash?: T;
   publishedAt?: T;
@@ -959,6 +981,19 @@ export interface TaskFixture {
  * via the `definition` "TaskDeterministic-score".
  */
 export interface TaskDeterministicScore {
+  input: {
+    outboxID: number;
+    runID: number;
+  };
+  output: {
+    runID: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskAi-evaluation".
+ */
+export interface TaskAiEvaluation {
   input: {
     outboxID: number;
     runID: number;

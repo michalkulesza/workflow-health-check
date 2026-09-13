@@ -38,6 +38,25 @@ const definition = questionnaireDefinitionSchema.parse({
     })),
     scoring: scoringForQuestion(question),
   })),
+  aiEvaluations: [
+    {
+      key: 'creative-friction',
+      categoryKey: 'friction',
+      evaluationQuestionKeys: ['q11', 'q12', 'q13'],
+      contextQuestionKeys: ['q1', 'q2', 'q3', 'q14', 'q15', 'q16'],
+      rubricVersion: 'creative-friction-v1-draft',
+      promptVersion: 'creative-friction-v1',
+      model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
+      levels: [
+        { level: 1, description: 'Reactive and repeatedly losing control.' },
+        { level: 2, description: 'Some structure, but unreliable.' },
+        { level: 3, description: 'Partly reliable, with recurring gaps.' },
+        { level: 4, description: 'Reliable with bounded weaknesses.' },
+        { level: 5, description: 'Reliable and demonstrably resilient.' },
+      ],
+      weight: 1,
+    },
+  ],
 })
 
 function scoringForQuestion(question: (typeof questions)[number]) {
@@ -131,6 +150,7 @@ const main = async () => {
           status: 'draft',
           categories: definition.categories,
           questions: definition.questions,
+          aiEvaluations: definition.aiEvaluations,
           definition,
           contentHash: 'seeded-by-hook',
         },
@@ -180,6 +200,7 @@ const main = async () => {
             data: {
               categories: definition.categories,
               questions: definition.questions,
+              aiEvaluations: definition.aiEvaluations,
             },
             overrideAccess: true,
           })

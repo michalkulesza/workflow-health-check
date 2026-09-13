@@ -94,6 +94,7 @@ export const publishQuestionnaire = async ({
       schemaVersion: 1,
       categories: draft.categories,
       questions: draft.questions,
+      aiEvaluations: draft.aiEvaluations,
     })
     const contentHash = hashDefinition(definition)
 
@@ -122,6 +123,7 @@ export const publishQuestionnaire = async ({
         status: 'published',
         categories: definition.categories,
         questions: definition.questions,
+        aiEvaluations: definition.aiEvaluations,
         definition,
         contentHash,
         publishedAt: new Date().toISOString(),
@@ -137,6 +139,7 @@ export const publishQuestionnaire = async ({
         status: 'draft',
         categories: definition.categories,
         questions: definition.questions,
+        aiEvaluations: definition.aiEvaluations,
         definition,
         contentHash,
       },

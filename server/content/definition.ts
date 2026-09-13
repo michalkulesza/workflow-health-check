@@ -103,6 +103,25 @@ const questionSchema = z.object({
   scoring: scoringSchema.default({ strategy: 'none', weight: 0 }),
 })
 
+const aiEvaluationSchema = z.object({
+  key: stableKeySchema,
+  categoryKey: stableKeySchema,
+  evaluationQuestionKeys: z.array(stableKeySchema).min(1).max(20),
+  contextQuestionKeys: z.array(stableKeySchema).max(50).default([]),
+  rubricVersion: z.string().trim().min(1).max(128),
+  promptVersion: z.string().trim().min(1).max(128),
+  model: z.string().trim().min(1).max(128),
+  levels: z
+    .array(
+      z.object({
+        level: z.number().int().min(1).max(5),
+        description: z.string().trim().min(1).max(4_000),
+      })
+    )
+    .length(5),
+  weight: z.number().finite().positive().default(1),
+})
+
 export const questionnaireDefinitionSchema = z
   .object({
     schemaVersion: z.literal(1),
@@ -121,6 +140,7 @@ export const questionnaireDefinitionSchema = z
       .min(1)
       .max(100),
     questions: z.array(questionSchema).min(1).max(100),
+    aiEvaluations: z.array(aiEvaluationSchema).max(100).default([]),
   })
   .superRefine((definition, context) => {
     const categoryKeys = new Set<string>()
@@ -269,6 +289,65 @@ export const questionnaireDefinitionSchema = z
       }
     }
 
+    const evaluatedQuestionKeys = new Set<string>()
+    for (const evaluation of definition.aiEvaluations) {
+      if (!categoryKeys.has(evaluation.categoryKey)) {
+        context.addIssue({
+          code: 'custom',
+          message: `AI evaluation ${evaluation.key} references an unknown category`,
+        })
+      }
+
+      for (const key of evaluation.evaluationQuestionKeys) {
+        const question = definition.questions.find(
+          (candidate) => candidate.key === key
+        )
+
+        if (!question || question.scoring.strategy !== 'ai_rubric') {
+          context.addIssue({
+            code: 'custom',
+            message: `AI evaluation ${evaluation.key} must reference an ai_rubric question: ${key}`,
+          })
+        }
+
+        if (evaluatedQuestionKeys.has(key)) {
+          context.addIssue({
+            code: 'custom',
+            message: `AI rubric question ${key} is counted more than once`,
+          })
+        }
+
+        evaluatedQuestionKeys.add(key)
+      }
+      for (const key of evaluation.contextQuestionKeys) {
+        if (!questionKeys.has(key)) {
+          context.addIssue({
+            code: 'custom',
+            message: `AI evaluation ${evaluation.key} references an unknown context question: ${key}`,
+          })
+        }
+      }
+
+      if (new Set(evaluation.levels.map((level) => level.level)).size !== 5) {
+        context.addIssue({
+          code: 'custom',
+          message: `AI evaluation ${evaluation.key} needs levels 1 through 5 exactly once`,
+        })
+      }
+    }
+
+    for (const question of definition.questions) {
+      if (
+        question.scoring.strategy === 'ai_rubric' &&
+        !evaluatedQuestionKeys.has(question.key)
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: `AI rubric question ${question.key} is not assigned to an evaluation`,
+        })
+      }
+    }
+
     for (const category of definition.categories) {
       const units = definition.questions.filter(
         (question) =>
@@ -276,14 +355,18 @@ export const questionnaireDefinitionSchema = z
           question.scoring.strategy !== 'none'
       )
 
-      if (category.scored && units.length === 0) {
+      const aiUnits = definition.aiEvaluations.filter(
+        (evaluation) => evaluation.categoryKey === category.key
+      )
+
+      if (category.scored && units.length === 0 && aiUnits.length === 0) {
         context.addIssue({
           code: 'custom',
           message: `Scored category ${category.key} requires a deterministic scoring unit`,
         })
       }
 
-      if (!category.scored && units.length > 0) {
+      if (!category.scored && (units.length > 0 || aiUnits.length > 0)) {
         context.addIssue({
           code: 'custom',
           message: `Unscored category ${category.key} cannot contain deterministic scoring units`,

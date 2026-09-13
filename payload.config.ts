@@ -18,6 +18,7 @@ import { publishEndpoint } from './server/content/publishEndpoint'
 import { LandingPage } from './server/globals/LandingPage'
 import { fixtureTask } from './server/jobs/fixtureTask'
 import { deterministicScoreTask } from './server/jobs/deterministicScoreTask'
+import { aiEvaluationTask } from './server/jobs/aiEvaluationTask'
 
 const baseDir = path.dirname(fileURLToPath(import.meta.url))
 const secret = process.env.PAYLOAD_SECRET
@@ -68,7 +69,7 @@ export default buildConfig({
   jobs: {
     access: { run: () => false, queue: () => false, cancel: () => false },
     deleteJobOnComplete: false,
-    tasks: [fixtureTask, deterministicScoreTask],
+    tasks: [fixtureTask, deterministicScoreTask, aiEvaluationTask],
   },
   typescript: { outputFile: path.join(baseDir, 'payload-types.ts') },
 })
