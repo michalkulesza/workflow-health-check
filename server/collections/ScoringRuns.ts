@@ -61,5 +61,6 @@ export const ScoringRuns: CollectionConfig = {
       defaultValue: 'deterministic-v1',
       admin: { readOnly: true },
     },
+    { name: 'report', type: 'json', admin: { readOnly: true } },
   ],
 }

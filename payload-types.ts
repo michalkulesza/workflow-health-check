@@ -121,6 +121,8 @@ export interface Config {
       fixture: TaskFixture;
       'deterministic-score': TaskDeterministicScore;
       'ai-evaluation': TaskAiEvaluation;
+      'category-aggregation': TaskCategoryAggregation;
+      'assessment-narrative': TaskAssessmentNarrative;
       inline: {
         input: unknown;
         output: unknown;
@@ -350,6 +352,15 @@ export interface ScoringRun {
     | boolean
     | null;
   engineVersion: string;
+  report?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -384,7 +395,7 @@ export interface ScoringResult {
 export interface AssessmentOutbox {
   id: number;
   workKey: string;
-  type: 'deterministic_score' | 'ai_evaluation';
+  type: 'deterministic_score' | 'ai_evaluation' | 'category_aggregation' | 'narrative';
   payload:
     | {
         [k: string]: unknown;
@@ -515,7 +526,13 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'fixture' | 'deterministic-score' | 'ai-evaluation';
+        taskSlug:
+          | 'inline'
+          | 'fixture'
+          | 'deterministic-score'
+          | 'ai-evaluation'
+          | 'category-aggregation'
+          | 'assessment-narrative';
         taskID: string;
         input?:
           | {
@@ -548,7 +565,9 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'fixture' | 'deterministic-score' | 'ai-evaluation') | null;
+  taskSlug?:
+    | ('inline' | 'fixture' | 'deterministic-score' | 'ai-evaluation' | 'category-aggregation' | 'assessment-narrative')
+    | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -774,6 +793,7 @@ export interface ScoringRunsSelect<T extends boolean = true> {
   answerSnapshotHash?: T;
   definitionSnapshot?: T;
   engineVersion?: T;
+  report?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -994,6 +1014,32 @@ export interface TaskDeterministicScore {
  * via the `definition` "TaskAi-evaluation".
  */
 export interface TaskAiEvaluation {
+  input: {
+    outboxID: number;
+    runID: number;
+  };
+  output: {
+    runID: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskCategory-aggregation".
+ */
+export interface TaskCategoryAggregation {
+  input: {
+    outboxID: number;
+    runID: number;
+  };
+  output: {
+    runID: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskAssessment-narrative".
+ */
+export interface TaskAssessmentNarrative {
   input: {
     outboxID: number;
     runID: number;

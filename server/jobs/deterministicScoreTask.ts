@@ -99,6 +99,17 @@ export const deterministicScoreTask: TaskConfig<{
             JSON.stringify({ runID: input.runID }),
           ]
         )
+      } else {
+        await client.query(
+          `INSERT INTO assessment_outbox
+            (work_key, type, payload, state, attempts, updated_at, created_at)
+           VALUES ($1, 'category_aggregation', $2::jsonb, 'pending', 0, now(), now())
+           ON CONFLICT (work_key) DO NOTHING`,
+          [
+            `category-aggregation:${input.runID}`,
+            JSON.stringify({ runID: input.runID }),
+          ]
+        )
       }
 
       await client.query(

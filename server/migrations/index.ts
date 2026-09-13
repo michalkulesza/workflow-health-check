@@ -5,6 +5,7 @@ import * as migration_20260913_132151_add_scoring_configuration from './20260913
 import * as migration_20260913_150000_submit_outbox_worker from './20260913_150000_submit_outbox_worker'
 import * as migration_20260913_150100_payload_lock_relations from './20260913_150100_payload_lock_relations'
 import * as migration_20260913_160000_ai_evaluations from './20260913_160000_ai_evaluations'
+import * as migration_20260913_170000_reports from './20260913_170000_reports'
 
 export const migrations = [
   {
@@ -41,5 +42,10 @@ export const migrations = [
     up: migration_20260913_160000_ai_evaluations.up,
     down: migration_20260913_160000_ai_evaluations.down,
     name: '20260913_160000_ai_evaluations',
+  },
+  {
+    up: migration_20260913_170000_reports.up,
+    down: migration_20260913_170000_reports.down,
+    name: '20260913_170000_reports',
   },
 ]

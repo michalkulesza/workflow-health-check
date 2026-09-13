@@ -8,7 +8,11 @@ type OutboxWork = {
   id: number
   runID: number
   leaseToken: string
-  type: 'deterministic_score' | 'ai_evaluation'
+  type:
+    | 'deterministic_score'
+    | 'ai_evaluation'
+    | 'category_aggregation'
+    | 'narrative'
 }
 
 const claimWork = async (payload: Payload): Promise<OutboxWork | null> => {
@@ -24,7 +28,7 @@ const claimWork = async (payload: Payload): Promise<OutboxWork | null> => {
       type: OutboxWork['type']
     }>(
       `SELECT id, payload, type FROM assessment_outbox
-        WHERE type IN ('deterministic_score', 'ai_evaluation')
+        WHERE type IN ('deterministic_score', 'ai_evaluation', 'category_aggregation', 'narrative')
           AND (state = 'pending' OR (state = 'leased' AND lease_expires_at < now()))
         ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1`
     )
@@ -64,10 +68,26 @@ export const dispatchAssessmentOutbox = async (
 
   while (work) {
     try {
-      const task =
-        work.type === 'deterministic_score'
-          ? 'deterministic-score'
-          : 'ai-evaluation'
+      let task:
+        | 'deterministic-score'
+        | 'ai-evaluation'
+        | 'category-aggregation'
+        | 'assessment-narrative'
+
+      switch (work.type) {
+        case 'deterministic_score':
+          task = 'deterministic-score'
+          break
+        case 'ai_evaluation':
+          task = 'ai-evaluation'
+          break
+        case 'category_aggregation':
+          task = 'category-aggregation'
+          break
+        case 'narrative':
+          task = 'assessment-narrative'
+          break
+      }
 
       const job = await payload.jobs.queue({
         input: { outboxID: work.id, runID: work.runID },

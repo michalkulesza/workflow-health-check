@@ -170,6 +170,16 @@ export const runAIEvaluation = async ({
       [runID, waiting.rowCount ? 'waiting_for_input' : 'complete']
     )
 
+    if (!waiting.rowCount) {
+      await client.query(
+        `INSERT INTO assessment_outbox
+          (work_key, type, payload, state, attempts, updated_at, created_at)
+         VALUES ($1, 'category_aggregation', $2::jsonb, 'pending', 0, now(), now())
+         ON CONFLICT (work_key) DO NOTHING`,
+        [`category-aggregation:${runID}`, JSON.stringify({ runID })]
+      )
+    }
+
     await client.query(
       `UPDATE submissions SET state = $2, updated_at = now() WHERE id = (SELECT submission_id FROM scoring_runs WHERE id = $1) AND state IN ('submitted', 'processing', 'awaiting_clarification')`,
       [runID, waiting.rowCount ? 'awaiting_clarification' : 'ready']
