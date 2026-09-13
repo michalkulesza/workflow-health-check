@@ -15,6 +15,7 @@ services:
       - workflow_health_check_postgres:/var/lib/postgresql/data
 
   migrate:
+    image: workflow-health-check:${IMAGE_TAG:-local}
     build: .
     command: npm run db:migrate
     depends_on:
@@ -32,7 +33,7 @@ services:
     profiles: ['maintenance']
 
   web:
-    build: .
+    image: workflow-health-check:${IMAGE_TAG:-local}
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,7 +53,7 @@ services:
     restart: unless-stopped
 
   worker:
-    build: .
+    image: workflow-health-check:${IMAGE_TAG:-local}
     command: npm run worker
     depends_on:
       postgres:

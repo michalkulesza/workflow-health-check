@@ -3,15 +3,6 @@ import AxeBuilder from '@axe-core/playwright'
 
 const questionnaireID = process.env.E2E_QUESTIONNAIRE_ID ?? ''
 
-const hasPreviewConfiguration = Boolean(
-  process.env.E2E_BASE_URL && questionnaireID
-)
-
-test.skip(
-  !hasPreviewConfiguration,
-  'Set E2E_BASE_URL and E2E_QUESTIONNAIRE_ID to run preview verification.'
-)
-
 test('public assessment pages are accessible, noindex, and free of prototype controls', async ({
   page,
 }) => {
@@ -34,7 +25,7 @@ test('public assessment pages are accessible, noindex, and free of prototype con
 
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
 
-  await page.goto(`/q/${questionnaireID}?preview-check=1`)
+  await page.goto(`/q/${questionnaireID}`)
   await expect(page.getByRole('main')).toBeVisible()
 
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(

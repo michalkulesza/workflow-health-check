@@ -13,9 +13,12 @@ the explicit one-shot maintenance service. Do not run migrations from `web` or
 `worker` startup.
 
 ```sh
-docker compose --profile maintenance run --rm migrate
-docker compose up --build --detach web worker proxy
+IMAGE_TAG=release-$(git rev-parse --short HEAD) docker compose build migrate
+IMAGE_TAG=release-$(git rev-parse --short HEAD) docker compose --profile maintenance run --rm migrate
+IMAGE_TAG=release-$(git rev-parse --short HEAD) docker compose up --detach web worker proxy
 ```
+
+All roles use the image named `workflow-health-check:$IMAGE_TAG`; record its digest with `docker image inspect`. A failed migration stops this release procedure—do not start web or worker until it is corrected. The PostgreSQL service is private in the production Compose network. For a host-only disposable database, use `compose.postgres.yaml`, which binds PostgreSQL to loopback only.
 
 The live health endpoint checks only process availability. The readiness
 endpoint also verifies PostgreSQL and reports a stale worker heartbeat as 503:

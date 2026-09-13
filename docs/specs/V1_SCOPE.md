@@ -154,7 +154,11 @@ Do not set arbitrary conversion targets before observing an initial baseline. At
 
 ### Preview and initial-launch verification
 
+- [ ] Install/enable Docker, run the disposable PostgreSQL stack, and record migration, seed, first-admin bootstrap, worker-heartbeat, restart, and persistence evidence.
+- [ ] Build and inspect the tagged production-style image; verify the migration, web, and worker roles run from that same image.
 - [ ] Run the configured-preview browser smoke suite with `E2E_BASE_URL` and a published `E2E_QUESTIONNAIRE_ID`; record accessibility, noindex, private-access, and invalid-report-token results.
 - [ ] Exercise save/resume, submit, clarification or AI fallback, notification, contact CTA, and worker restart recovery against the preview.
 - [ ] Record the Docker Compose migration/restart check and an isolated database backup-restore rehearsal.
+- [ ] Inspect a CI run on the repository default branch and record its run URL/identifier and Playwright result.
+- [ ] Obtain authorized isolated external-preview access (host, origin, secret injection, protection, and owner), then record its protected URL and smoke-test result.
 - [ ] Verify the sending domain, production secrets, backup destination, and named launch operator before inviting the first cohort.

@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16.11-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-workflow_spike}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_USER: ${POSTGRES_USER:-workflow}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    ports:
+      - '127.0.0.1:55432:5432'
+    volumes:
+      - workflow_health_check_postgres:/var/lib/postgresql/data
+
+volumes:
+  workflow_health_check_postgres:

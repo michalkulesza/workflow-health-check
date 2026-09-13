@@ -74,12 +74,8 @@
           "name": "admins_sessions_parent_id_fk",
           "tableFrom": "admins_sessions",
           "tableTo": "admins",
-          "columnsFrom": [
-            "_parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["_parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -343,12 +339,8 @@
           "name": "questionnaires_current_published_version_id_questionnaire_versions_id_fk",
           "tableFrom": "questionnaires",
           "tableTo": "questionnaire_versions",
-          "columnsFrom": [
-            "current_published_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_published_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -356,12 +348,8 @@
           "name": "questionnaires_draft_version_id_questionnaire_versions_id_fk",
           "tableFrom": "questionnaires",
           "tableTo": "questionnaire_versions",
-          "columnsFrom": [
-            "draft_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["draft_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -450,12 +438,8 @@
           "name": "questionnaire_versions_categories_parent_id_fk",
           "tableFrom": "questionnaire_versions_categories",
           "tableTo": "questionnaire_versions",
-          "columnsFrom": [
-            "_parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["_parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -552,12 +536,8 @@
           "name": "questionnaire_versions_questions_options_parent_id_fk",
           "tableFrom": "questionnaire_versions_questions_options",
           "tableTo": "questionnaire_versions_questions",
-          "columnsFrom": [
-            "_parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["_parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -678,12 +658,8 @@
           "name": "questionnaire_versions_questions_parent_id_fk",
           "tableFrom": "questionnaire_versions_questions",
           "tableTo": "questionnaire_versions",
-          "columnsFrom": [
-            "_parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["_parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -830,12 +806,8 @@
           "name": "questionnaire_versions_questionnaire_id_questionnaires_id_fk",
           "tableFrom": "questionnaire_versions",
           "tableTo": "questionnaires",
-          "columnsFrom": [
-            "questionnaire_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["questionnaire_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -972,12 +944,8 @@
           "name": "submissions_questionnaire_version_id_questionnaire_versions_id_fk",
           "tableFrom": "submissions",
           "tableTo": "questionnaire_versions",
-          "columnsFrom": [
-            "questionnaire_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["questionnaire_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1123,12 +1091,8 @@
           "name": "answers_submission_id_submissions_id_fk",
           "tableFrom": "answers",
           "tableTo": "submissions",
-          "columnsFrom": [
-            "submission_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["submission_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1296,12 +1260,8 @@
           "name": "payload_jobs_log_parent_id_fk",
           "tableFrom": "payload_jobs_log",
           "tableTo": "payload_jobs",
-          "columnsFrom": [
-            "_parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["_parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1811,12 +1771,8 @@
           "name": "payload_locked_documents_rels_parent_fk",
           "tableFrom": "payload_locked_documents_rels",
           "tableTo": "payload_locked_documents",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1824,12 +1780,8 @@
           "name": "payload_locked_documents_rels_admins_fk",
           "tableFrom": "payload_locked_documents_rels",
           "tableTo": "admins",
-          "columnsFrom": [
-            "admins_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["admins_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1837,12 +1789,8 @@
           "name": "payload_locked_documents_rels_questionnaires_fk",
           "tableFrom": "payload_locked_documents_rels",
           "tableTo": "questionnaires",
-          "columnsFrom": [
-            "questionnaires_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["questionnaires_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1850,12 +1798,8 @@
           "name": "payload_locked_documents_rels_questionnaire_versions_fk",
           "tableFrom": "payload_locked_documents_rels",
           "tableTo": "questionnaire_versions",
-          "columnsFrom": [
-            "questionnaire_versions_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["questionnaire_versions_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1863,12 +1807,8 @@
           "name": "payload_locked_documents_rels_submissions_fk",
           "tableFrom": "payload_locked_documents_rels",
           "tableTo": "submissions",
-          "columnsFrom": [
-            "submissions_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["submissions_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1876,12 +1816,8 @@
           "name": "payload_locked_documents_rels_answers_fk",
           "tableFrom": "payload_locked_documents_rels",
           "tableTo": "answers",
-          "columnsFrom": [
-            "answers_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["answers_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2085,12 +2021,8 @@
           "name": "payload_preferences_rels_parent_fk",
           "tableFrom": "payload_preferences_rels",
           "tableTo": "payload_preferences",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2098,12 +2030,8 @@
           "name": "payload_preferences_rels_admins_fk",
           "tableFrom": "payload_preferences_rels",
           "tableTo": "admins",
-          "columnsFrom": [
-            "admins_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["admins_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2262,12 +2190,8 @@
           "name": "landing_page_steps_parent_id_fk",
           "tableFrom": "landing_page_steps",
           "tableTo": "landing_page",
-          "columnsFrom": [
-            "_parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["_parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2371,12 +2295,8 @@
           "name": "landing_page_questionnaire_id_questionnaires_id_fk",
           "tableFrom": "landing_page",
           "tableTo": "questionnaires",
-          "columnsFrom": [
-            "questionnaire_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["questionnaire_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2392,19 +2312,12 @@
     "public.enum_questionnaire_versions_questions_type": {
       "name": "enum_questionnaire_versions_questions_type",
       "schema": "public",
-      "values": [
-        "single",
-        "multi",
-        "text"
-      ]
+      "values": ["single", "multi", "text"]
     },
     "public.enum_questionnaire_versions_status": {
       "name": "enum_questionnaire_versions_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "published"
-      ]
+      "values": ["draft", "published"]
     },
     "public.enum_submissions_state": {
       "name": "enum_submissions_state",
@@ -2422,34 +2335,22 @@
     "public.enum_answers_state": {
       "name": "enum_answers_state",
       "schema": "public",
-      "values": [
-        "answered",
-        "skipped"
-      ]
+      "values": ["answered", "skipped"]
     },
     "public.enum_payload_jobs_log_task_slug": {
       "name": "enum_payload_jobs_log_task_slug",
       "schema": "public",
-      "values": [
-        "inline",
-        "fixture"
-      ]
+      "values": ["inline", "fixture"]
     },
     "public.enum_payload_jobs_log_state": {
       "name": "enum_payload_jobs_log_state",
       "schema": "public",
-      "values": [
-        "failed",
-        "succeeded"
-      ]
+      "values": ["failed", "succeeded"]
     },
     "public.enum_payload_jobs_task_slug": {
       "name": "enum_payload_jobs_task_slug",
       "schema": "public",
-      "values": [
-        "inline",
-        "fixture"
-      ]
+      "values": ["inline", "fixture"]
     }
   },
   "schemas": {},

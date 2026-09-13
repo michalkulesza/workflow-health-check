@@ -5,6 +5,7 @@ import {
   questions,
 } from '../lib/fixtures'
 import { questionnaireDefinitionSchema } from '../server/content/definition'
+import { publishQuestionnaire } from '../server/content/publishQuestionnaire'
 import { loadPayload } from './payloadRuntime'
 
 const definition = questionnaireDefinitionSchema.parse({
@@ -212,6 +213,22 @@ const main = async () => {
           )
         }
       }
+    }
+
+    if (!questionnaire.currentPublishedVersion) {
+      const draftVersionID = relationID(questionnaire.draftVersion)
+
+      if (!draftVersionID) {
+        throw new Error('Foundation questionnaire has no draft to publish')
+      }
+
+      await publishQuestionnaire({
+        payload,
+        questionnaireID: questionnaire.id,
+        draftVersionID,
+      })
+
+      console.log('Foundation questionnaire published.')
     }
 
     const landing = await payload.findGlobal({
