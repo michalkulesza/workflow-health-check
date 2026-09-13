@@ -207,6 +207,10 @@ export interface QuestionnaireVersion {
         key: string;
         label: string;
         order: number;
+        scored?: boolean | null;
+        maxPoints?: number | null;
+        attentionThreshold?: number | null;
+        minimumCoverage?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -226,8 +230,23 @@ export interface QuestionnaireVersion {
               label: string;
               exclusive?: boolean | null;
               requiresText?: boolean | null;
+              value?: number | null;
+              penalty?: number | null;
+              notApplicable?: boolean | null;
               id?: string | null;
             }[]
+          | null;
+        /**
+         * Validated version-specific scoring configuration.
+         */
+        scoring:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
           | null;
         id?: string | null;
       }[]
@@ -551,6 +570,10 @@ export interface QuestionnaireVersionsSelect<T extends boolean = true> {
         key?: T;
         label?: T;
         order?: T;
+        scored?: T;
+        maxPoints?: T;
+        attentionThreshold?: T;
+        minimumCoverage?: T;
         id?: T;
       };
   questions?:
@@ -571,8 +594,12 @@ export interface QuestionnaireVersionsSelect<T extends boolean = true> {
               label?: T;
               exclusive?: T;
               requiresText?: T;
+              value?: T;
+              penalty?: T;
+              notApplicable?: T;
               id?: T;
             };
+        scoring?: T;
         id?: T;
       };
   definition?: T;

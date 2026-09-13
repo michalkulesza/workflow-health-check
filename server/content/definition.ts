@@ -13,7 +13,82 @@ const optionSchema = z.object({
   label: z.string().trim().min(1).max(500),
   exclusive: z.boolean().default(false),
   requiresText: z.boolean().default(false),
+  value: z.number().finite().min(0).max(1).nullable().default(null),
+  penalty: z.number().finite().nonnegative().nullable().default(null),
+  notApplicable: z.boolean().default(false),
 })
+
+const curveSchema = z
+  .array(
+    z.object({
+      atLeast: z.number().int().positive(),
+      value: z.number().finite().min(0).max(1),
+    })
+  )
+  .min(1)
+  .superRefine((buckets, context) => {
+    const values = new Set<number>()
+    for (const bucket of buckets) {
+      if (values.has(bucket.atLeast)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'A count curve cannot repeat a bucket',
+        })
+      }
+
+      values.add(bucket.atLeast)
+    }
+  })
+
+const scoringSchema = z
+  .discriminatedUnion('strategy', [
+    z.object({ strategy: z.literal('none'), weight: z.literal(0).default(0) }),
+    z.object({
+      strategy: z.literal('ai_rubric'),
+      weight: z.number().finite().positive(),
+    }),
+    z.object({
+      strategy: z.literal('single_choice_value'),
+      weight: z.number().finite().positive().default(1),
+    }),
+    z.object({
+      strategy: z.literal('multi_select_count'),
+      weight: z.number().finite().positive().default(1),
+      curve: curveSchema,
+      exclusiveValue: z.number().finite().min(0).max(1).default(1),
+    }),
+    z.object({
+      strategy: z.literal('multi_select_weighted'),
+      weight: z.number().finite().positive().default(1),
+      penaltyDenominator: z.number().finite().positive(),
+      exclusiveValue: z.number().finite().min(0).max(1).default(1),
+    }),
+    z.object({
+      strategy: z.literal('multi_select_quality_quantity'),
+      weight: z.number().finite().positive().default(1),
+      qualityWeight: z.number().finite().nonnegative(),
+      quantityWeight: z.number().finite().nonnegative(),
+      quantityCurve: curveSchema,
+      singletonOverride: z
+        .object({
+          optionKey: stableKeySchema,
+          value: z.number().finite().min(0).max(1),
+        })
+        .nullable()
+        .default(null),
+    }),
+  ])
+  .superRefine((scoring, context) => {
+    if (
+      scoring.strategy === 'multi_select_quality_quantity' &&
+      scoring.qualityWeight + scoring.quantityWeight !== 1
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Quality and quantity weights must total 1',
+      })
+    }
+  })
 
 const questionSchema = z.object({
   key: stableKeySchema,
@@ -25,6 +100,7 @@ const questionSchema = z.object({
   instructions: z.string().trim().min(1).max(2_000).nullable(),
   maxSelections: z.number().int().positive().nullable(),
   options: z.array(optionSchema).max(100),
+  scoring: scoringSchema.default({ strategy: 'none', weight: 0 }),
 })
 
 export const questionnaireDefinitionSchema = z
@@ -36,6 +112,10 @@ export const questionnaireDefinitionSchema = z
           key: stableKeySchema,
           label: z.string().trim().min(1).max(160),
           order: z.number().int().nonnegative(),
+          scored: z.boolean().default(false),
+          maxPoints: z.number().finite().positive().default(20),
+          attentionThreshold: z.number().finite().min(0).max(1).default(0.6),
+          minimumCoverage: z.number().finite().min(0).max(1).default(0.6),
         })
       )
       .min(1)
@@ -126,6 +206,88 @@ export const questionnaireDefinitionSchema = z
         }
 
         optionKeys.add(option.key)
+      }
+
+      const { scoring } = question
+
+      if (
+        scoring.strategy === 'single_choice_value' &&
+        (question.type !== 'single' ||
+          question.options.some(
+            (option) => !option.notApplicable && option.value === null
+          ))
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: `Single-choice scoring for ${question.key} requires a value for every option`,
+        })
+      }
+
+      if (
+        scoring.strategy === 'multi_select_weighted' &&
+        (question.type !== 'multi' ||
+          question.options.some(
+            (option) => !option.exclusive && option.penalty === null
+          ))
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: `Weighted scoring for ${question.key} requires penalties for non-exclusive options`,
+        })
+      }
+
+      if (
+        scoring.strategy === 'multi_select_count' &&
+        question.type !== 'multi'
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: `Count scoring for ${question.key} requires a multi-select question`,
+        })
+      }
+
+      if (scoring.strategy === 'multi_select_quality_quantity') {
+        if (
+          question.type !== 'multi' ||
+          question.options.some((option) => option.value === null)
+        ) {
+          context.addIssue({
+            code: 'custom',
+            message: `Quality/quantity scoring for ${question.key} requires values for every option`,
+          })
+        }
+
+        if (
+          scoring.singletonOverride &&
+          !optionKeys.has(scoring.singletonOverride.optionKey)
+        ) {
+          context.addIssue({
+            code: 'custom',
+            message: `Singleton override for ${question.key} references an unknown option`,
+          })
+        }
+      }
+    }
+
+    for (const category of definition.categories) {
+      const units = definition.questions.filter(
+        (question) =>
+          question.categoryKey === category.key &&
+          question.scoring.strategy !== 'none'
+      )
+
+      if (category.scored && units.length === 0) {
+        context.addIssue({
+          code: 'custom',
+          message: `Scored category ${category.key} requires a deterministic scoring unit`,
+        })
+      }
+
+      if (!category.scored && units.length > 0) {
+        context.addIssue({
+          code: 'custom',
+          message: `Unscored category ${category.key} cannot contain deterministic scoring units`,
+        })
       }
     }
   })

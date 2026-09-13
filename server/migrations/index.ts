@@ -1,6 +1,7 @@
 import * as migration_20260911_215910_initial_assessment_foundation from './20260911_215910_initial_assessment_foundation'
 import * as migration_20260913_110626_cms_publication_service from './20260913_110626_cms_publication_service'
 import * as migration_20260913_123420_anonymous_sessions_save_resume from './20260913_123420_anonymous_sessions_save_resume'
+import * as migration_20260913_132151_add_scoring_configuration from './20260913_132151_add_scoring_configuration'
 
 export const migrations = [
   {
@@ -17,5 +18,10 @@ export const migrations = [
     up: migration_20260913_123420_anonymous_sessions_save_resume.up,
     down: migration_20260913_123420_anonymous_sessions_save_resume.down,
     name: '20260913_123420_anonymous_sessions_save_resume',
+  },
+  {
+    up: migration_20260913_132151_add_scoring_configuration.up,
+    down: migration_20260913_132151_add_scoring_configuration.down,
+    name: '20260913_132151_add_scoring_configuration',
   },
 ]

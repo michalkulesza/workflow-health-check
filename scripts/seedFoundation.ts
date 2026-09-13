@@ -13,6 +13,10 @@ const definition = questionnaireDefinitionSchema.parse({
     key: category.id,
     label: category.name,
     order: index,
+    scored: category.scored,
+    maxPoints: category.maxPoints,
+    attentionThreshold: category.attentionThreshold,
+    minimumCoverage: 0.6,
   })),
   questions: questions.map((question) => ({
     key: question.id,
@@ -28,9 +32,64 @@ const definition = questionnaireDefinitionSchema.parse({
       label: option.label,
       exclusive: option.exclusive ?? false,
       requiresText: option.requiresText ?? false,
+      value: option.value ?? null,
+      penalty: question.id === 'q8' ? (option.value ?? null) : null,
+      notApplicable: option.notApplicable ?? false,
     })),
+    scoring: scoringForQuestion(question),
   })),
 })
+
+function scoringForQuestion(question: (typeof questions)[number]) {
+  switch (question.strategy) {
+    case 'single_choice_value':
+      return { strategy: question.strategy, weight: 1 } as const
+    case 'multi_select_count':
+      return {
+        strategy: question.strategy,
+        weight: 1,
+        curve: [
+          { atLeast: 1, value: 0.9 },
+          { atLeast: 2, value: 0.8 },
+          { atLeast: 3, value: 0.7 },
+          { atLeast: 4, value: 0.6 },
+          { atLeast: 5, value: 0.5 },
+          { atLeast: 6, value: 0.4 },
+          { atLeast: 7, value: 0.3 },
+          { atLeast: 8, value: 0.2 },
+          { atLeast: 9, value: 0.1 },
+          { atLeast: 10, value: 0 },
+        ],
+        exclusiveValue: 1,
+      } as const
+    case 'multi_select_weighted':
+      return {
+        strategy: question.strategy,
+        weight: 1,
+        penaltyDenominator: 16.5,
+        exclusiveValue: 1,
+      } as const
+    case 'multi_select_quality_quantity':
+      return {
+        strategy: question.strategy,
+        weight: 1,
+        qualityWeight: 0.6,
+        quantityWeight: 0.4,
+        quantityCurve: [
+          { atLeast: 1, value: 1 },
+          { atLeast: 2, value: 0.8 },
+          { atLeast: 3, value: 0.55 },
+          { atLeast: 4, value: 0.3 },
+          { atLeast: 5, value: 0 },
+        ],
+        singletonOverride: { optionKey: 'head', value: 0 },
+      } as const
+    case 'ai_rubric':
+      return { strategy: question.strategy, weight: 1 } as const
+    case 'none':
+      return { strategy: 'none', weight: 0 } as const
+  }
+}
 
 const relationID = (value: unknown): number | null => {
   if (typeof value === 'number') {
@@ -97,7 +156,24 @@ const main = async () => {
           overrideAccess: true,
         })
 
-        if (!draft.categories?.length || !draft.questions?.length) {
+        const parsedDraftDefinition = questionnaireDefinitionSchema.safeParse(
+          draft.definition
+        )
+
+        const hasLegacyUnconfiguredScoring =
+          parsedDraftDefinition.success &&
+          parsedDraftDefinition.data.questions.every(
+            (question) => question.scoring.strategy === 'none'
+          ) &&
+          parsedDraftDefinition.data.categories.every(
+            (category) => !category.scored
+          )
+
+        if (
+          !draft.categories?.length ||
+          !draft.questions?.length ||
+          hasLegacyUnconfiguredScoring
+        ) {
           await payload.update({
             collection: 'questionnaire-versions',
             id: draft.id,
