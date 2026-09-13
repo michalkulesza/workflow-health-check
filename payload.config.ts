@@ -9,6 +9,8 @@ import { Answers } from './server/collections/Answers'
 import { Questionnaires } from './server/collections/Questionnaires'
 import { QuestionnaireVersions } from './server/collections/QuestionnaireVersions'
 import { Submissions } from './server/collections/Submissions'
+import { publishEndpoint } from './server/content/publishEndpoint'
+import { LandingPage } from './server/globals/LandingPage'
 import { fixtureTask } from './server/jobs/fixtureTask'
 
 const baseDir = path.dirname(fileURLToPath(import.meta.url))
@@ -34,6 +36,14 @@ export default buildConfig({
     QuestionnaireVersions,
     Submissions,
     Answers,
+  ],
+  globals: [LandingPage],
+  endpoints: [
+    {
+      method: 'post',
+      path: '/admin-content/questionnaires/:id/publish',
+      handler: publishEndpoint,
+    },
   ],
   db: postgresAdapter({
     pool: { connectionString },

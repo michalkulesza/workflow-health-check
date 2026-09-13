@@ -95,8 +95,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'landing-page': LandingPage;
+  };
+  globalsSelect: {
+    'landing-page': LandingPageSelect<false> | LandingPageSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -176,8 +180,41 @@ export interface Questionnaire {
 export interface QuestionnaireVersion {
   id: number;
   questionnaire: number | Questionnaire;
-  versionNumber: number;
+  /**
+   * Assigned only when this draft becomes a published version.
+   */
+  versionNumber?: number | null;
   status: 'draft' | 'published';
+  categories?:
+    | {
+        key: string;
+        label: string;
+        order: number;
+        id?: string | null;
+      }[]
+    | null;
+  questions?:
+    | {
+        key: string;
+        number: number;
+        categoryKey: string;
+        prompt: string;
+        type: 'single' | 'multi' | 'text';
+        required: boolean;
+        instructions?: string | null;
+        maxSelections?: number | null;
+        options?:
+          | {
+              key: string;
+              label: string;
+              exclusive?: boolean | null;
+              requiresText?: boolean | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
   definition:
     | {
         [k: string]: unknown;
@@ -457,6 +494,36 @@ export interface QuestionnaireVersionsSelect<T extends boolean = true> {
   questionnaire?: T;
   versionNumber?: T;
   status?: T;
+  categories?:
+    | T
+    | {
+        key?: T;
+        label?: T;
+        order?: T;
+        id?: T;
+      };
+  questions?:
+    | T
+    | {
+        key?: T;
+        number?: T;
+        categoryKey?: T;
+        prompt?: T;
+        type?: T;
+        required?: T;
+        instructions?: T;
+        maxSelections?: T;
+        options?:
+          | T
+          | {
+              key?: T;
+              label?: T;
+              exclusive?: T;
+              requiresText?: T;
+              id?: T;
+            };
+        id?: T;
+      };
   definition?: T;
   contentHash?: T;
   publishedAt?: T;
@@ -560,6 +627,54 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "landing-page".
+ */
+export interface LandingPage {
+  id: number;
+  pageTitle: string;
+  metaDescription: string;
+  headline: string;
+  supporting: string;
+  audienceTitle: string;
+  audience: string;
+  steps?:
+    | {
+        title: string;
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  buttonLabel: string;
+  questionnaire: number | Questionnaire;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "landing-page_select".
+ */
+export interface LandingPageSelect<T extends boolean = true> {
+  pageTitle?: T;
+  metaDescription?: T;
+  headline?: T;
+  supporting?: T;
+  audienceTitle?: T;
+  audience?: T;
+  steps?:
+    | T
+    | {
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  buttonLabel?: T;
+  questionnaire?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
