@@ -18,6 +18,7 @@ export const AssessmentOutbox: CollectionConfig = {
         'ai_evaluation',
         'category_aggregation',
         'narrative',
+        'report_email',
       ],
     },
     {

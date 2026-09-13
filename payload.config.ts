@@ -21,6 +21,7 @@ import { deterministicScoreTask } from './server/jobs/deterministicScoreTask'
 import { aiEvaluationTask } from './server/jobs/aiEvaluationTask'
 import { categoryAggregationTask } from './server/jobs/categoryAggregationTask'
 import { narrativeTask } from './server/jobs/narrativeTask'
+import { reportEmailTask } from './server/jobs/reportEmailTask'
 
 const baseDir = path.dirname(fileURLToPath(import.meta.url))
 const secret = process.env.PAYLOAD_SECRET
@@ -77,6 +78,7 @@ export default buildConfig({
       aiEvaluationTask,
       categoryAggregationTask,
       narrativeTask,
+      reportEmailTask,
     ],
   },
   typescript: { outputFile: path.join(baseDir, 'payload-types.ts') },

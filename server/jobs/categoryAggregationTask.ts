@@ -5,6 +5,7 @@ import {
   noMajorIssuesReport,
 } from '@/server/assessment/report'
 import { questionnaireDefinitionSchema } from '@/server/content/definition'
+import { enqueueReportNotificationDeliveries } from '@/server/notifications/delivery'
 
 export const categoryAggregationTask: TaskConfig<{
   input: { outboxID: number; runID: number }
@@ -107,6 +108,11 @@ export const categoryAggregationTask: TaskConfig<{
             WHERE id = (SELECT submission_id FROM scoring_runs WHERE id = $1)`,
           [input.runID]
         )
+
+        await enqueueReportNotificationDeliveries({
+          client,
+          runID: input.runID,
+        })
       } else {
         await client.query(
           `INSERT INTO assessment_outbox

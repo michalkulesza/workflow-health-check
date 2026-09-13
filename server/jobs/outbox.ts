@@ -5,14 +5,16 @@ import type { Payload } from 'payload'
 const LEASE_SECONDS = 60
 
 type OutboxWork = {
+  deliveryID?: number
   id: number
-  runID: number
+  runID?: number
   leaseToken: string
   type:
     | 'deterministic_score'
     | 'ai_evaluation'
     | 'category_aggregation'
     | 'narrative'
+    | 'report_email'
 }
 
 const claimWork = async (payload: Payload): Promise<OutboxWork | null> => {
@@ -24,11 +26,11 @@ const claimWork = async (payload: Payload): Promise<OutboxWork | null> => {
 
     const work = await client.query<{
       id: number
-      payload: { runID: number }
+      payload: { deliveryID?: number; runID?: number }
       type: OutboxWork['type']
     }>(
       `SELECT id, payload, type FROM assessment_outbox
-        WHERE type IN ('deterministic_score', 'ai_evaluation', 'category_aggregation', 'narrative')
+        WHERE type IN ('deterministic_score', 'ai_evaluation', 'category_aggregation', 'narrative', 'report_email')
           AND (state = 'pending' OR (state = 'leased' AND lease_expires_at < now()))
         ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1`
     )
@@ -51,7 +53,23 @@ const claimWork = async (payload: Payload): Promise<OutboxWork | null> => {
 
     await client.query('COMMIT')
 
-    return { id: row.id, runID: row.payload.runID, leaseToken, type: row.type }
+    if (row.type === 'report_email' && !row.payload.deliveryID) {
+      throw new Error(`Report email outbox ${row.id} has no delivery ID`)
+    }
+
+    if (row.type !== 'report_email' && !row.payload.runID) {
+      throw new Error(`Assessment outbox ${row.id} has no run ID`)
+    }
+
+    return {
+      id: row.id,
+      ...(row.payload.runID === undefined ? {} : { runID: row.payload.runID }),
+      ...(row.payload.deliveryID === undefined
+        ? {}
+        : { deliveryID: row.payload.deliveryID }),
+      leaseToken,
+      type: row.type,
+    }
   } catch (error) {
     await client.query('ROLLBACK')
     throw error
@@ -67,6 +85,8 @@ export const dispatchAssessmentOutbox = async (
   let work = await claimWork(payload)
 
   while (work) {
+    const claimedWork = work
+
     try {
       let task:
         | 'deterministic-score'
@@ -74,7 +94,7 @@ export const dispatchAssessmentOutbox = async (
         | 'category-aggregation'
         | 'assessment-narrative'
 
-      switch (work.type) {
+      switch (claimedWork.type) {
         case 'deterministic_score':
           task = 'deterministic-score'
           break
@@ -87,10 +107,44 @@ export const dispatchAssessmentOutbox = async (
         case 'narrative':
           task = 'assessment-narrative'
           break
+        case 'report_email': {
+          const deliveryID = claimedWork.deliveryID
+
+          if (deliveryID === undefined) {
+            throw new Error(
+              `Report email outbox ${claimedWork.id} has no delivery ID`
+            )
+          }
+
+          const job = await payload.jobs.queue({
+            input: { outboxID: claimedWork.id, deliveryID },
+            overrideAccess: true,
+            queue: 'assessment',
+            task: 'report-email',
+          })
+
+          await payload.db.pool.query(
+            `UPDATE assessment_outbox
+                  SET state = 'dispatched', payload_job_id = $1,
+                      lease_token = NULL, lease_expires_at = NULL, updated_at = now()
+                WHERE id = $2 AND lease_token = $3`,
+            [job.id, claimedWork.id, claimedWork.leaseToken]
+          )
+
+          dispatched += 1
+          work = await claimWork(payload)
+          continue
+        }
+      }
+
+      const runID = claimedWork.runID
+
+      if (runID === undefined) {
+        throw new Error(`Assessment outbox ${claimedWork.id} has no run ID`)
       }
 
       const job = await payload.jobs.queue({
-        input: { outboxID: work.id, runID: work.runID },
+        input: { outboxID: claimedWork.id, runID },
         overrideAccess: true,
         queue: 'assessment',
         task,
@@ -101,7 +155,7 @@ export const dispatchAssessmentOutbox = async (
             SET state = 'dispatched', payload_job_id = $1,
                 lease_token = NULL, lease_expires_at = NULL, updated_at = now()
           WHERE id = $2 AND lease_token = $3`,
-        [job.id, work.id, work.leaseToken]
+        [job.id, claimedWork.id, claimedWork.leaseToken]
       )
 
       dispatched += 1
@@ -110,7 +164,7 @@ export const dispatchAssessmentOutbox = async (
         `UPDATE assessment_outbox
             SET state = 'pending', lease_token = NULL, lease_expires_at = NULL, updated_at = now()
           WHERE id = $1 AND lease_token = $2`,
-        [work.id, work.leaseToken]
+        [claimedWork.id, claimedWork.leaseToken]
       )
 
       throw error

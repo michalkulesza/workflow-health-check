@@ -6,6 +6,7 @@ import {
   type NarrativeProvider,
 } from '@/server/ai/narrative'
 import { questionnaireDefinitionSchema } from '@/server/content/definition'
+import { enqueueReportNotificationDeliveries } from '@/server/notifications/delivery'
 
 const answerText = (answer: ReturnType<typeof answerValueSchema.parse>) =>
   answer.state === 'answered'
@@ -151,6 +152,8 @@ export const runNarrative = async ({
         WHERE id = (SELECT submission_id FROM scoring_runs WHERE id = $1)`,
       [runID]
     )
+
+    await enqueueReportNotificationDeliveries({ client, runID })
 
     await client.query(
       `UPDATE assessment_outbox SET state = 'completed', updated_at = now() WHERE id = $1`,

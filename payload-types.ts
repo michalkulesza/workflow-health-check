@@ -123,6 +123,7 @@ export interface Config {
       'ai-evaluation': TaskAiEvaluation;
       'category-aggregation': TaskCategoryAggregation;
       'assessment-narrative': TaskAssessmentNarrative;
+      'report-email': TaskReportEmail;
       inline: {
         input: unknown;
         output: unknown;
@@ -395,7 +396,7 @@ export interface ScoringResult {
 export interface AssessmentOutbox {
   id: number;
   workKey: string;
-  type: 'deterministic_score' | 'ai_evaluation' | 'category_aggregation' | 'narrative';
+  type: 'deterministic_score' | 'ai_evaluation' | 'category_aggregation' | 'narrative' | 'report_email';
   payload:
     | {
         [k: string]: unknown;
@@ -532,7 +533,8 @@ export interface PayloadJob {
           | 'deterministic-score'
           | 'ai-evaluation'
           | 'category-aggregation'
-          | 'assessment-narrative';
+          | 'assessment-narrative'
+          | 'report-email';
         taskID: string;
         input?:
           | {
@@ -566,7 +568,15 @@ export interface PayloadJob {
       }[]
     | null;
   taskSlug?:
-    | ('inline' | 'fixture' | 'deterministic-score' | 'ai-evaluation' | 'category-aggregation' | 'assessment-narrative')
+    | (
+        | 'inline'
+        | 'fixture'
+        | 'deterministic-score'
+        | 'ai-evaluation'
+        | 'category-aggregation'
+        | 'assessment-narrative'
+        | 'report-email'
+      )
     | null;
   queue?: string | null;
   waitUntil?: string | null;
@@ -1046,6 +1056,19 @@ export interface TaskAssessmentNarrative {
   };
   output: {
     runID: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReport-email".
+ */
+export interface TaskReportEmail {
+  input: {
+    deliveryID: number;
+    outboxID: number;
+  };
+  output: {
+    deliveryID: number;
   };
 }
 /**

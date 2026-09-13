@@ -6,6 +6,7 @@ import * as migration_20260913_150000_submit_outbox_worker from './20260913_1500
 import * as migration_20260913_150100_payload_lock_relations from './20260913_150100_payload_lock_relations'
 import * as migration_20260913_160000_ai_evaluations from './20260913_160000_ai_evaluations'
 import * as migration_20260913_170000_reports from './20260913_170000_reports'
+import * as migration_20260913_180000_report_notifications from './20260913_180000_report_notifications'
 
 export const migrations = [
   {
@@ -47,5 +48,10 @@ export const migrations = [
     up: migration_20260913_170000_reports.up,
     down: migration_20260913_170000_reports.down,
     name: '20260913_170000_reports',
+  },
+  {
+    up: migration_20260913_180000_report_notifications.up,
+    down: migration_20260913_180000_report_notifications.down,
+    name: '20260913_180000_report_notifications',
   },
 ]
