@@ -1,125 +1,154 @@
 'use client'
+
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import {
-  categories,
-  QUESTIONNAIRE_ID,
-  questions,
-  reportFixtures,
-  scenarioLabels,
-} from '@/lib/fixtures'
-import {
-  blankProgress,
-  createMockServices,
-  sampleAnswers,
-} from '@/lib/mock-services'
-import { formatAnswerForReview } from '@/lib/formatAnswerForReview'
-import type { Answer, Progress, ReportResult, Scenario } from '@/lib/types'
+
+import type {
+  AnswerValue,
+  Questionnaire,
+  Report,
+  Submission,
+} from '@/lib/assessment/contracts'
+import { AssessmentAdapterError } from '@/lib/assessment/adapter'
+import { browserAssessmentAdapter } from '@/lib/assessment/browserAdapter'
+
 import { QuestionField } from './QuestionField'
 import { ResultsView } from './ResultsView'
-import { ScoringDebugPanel } from './ScoringDebugPanel'
 
 type Screen = 'question' | 'review' | 'processing' | 'clarification' | 'results'
-const validScenarios = new Set(Object.keys(scenarioLabels))
 
-const validation = (question: (typeof questions)[number], answer?: Answer) => {
-  if (question.required) {
-    if (question.type === 'text' && !answer?.text?.trim()) {
-      return 'Please add an answer before continuing.'
-    }
+const emptyAnswer = (): AnswerValue => ({
+  state: 'skipped',
+  selectedOptionKeys: [],
+  text: null,
+  optionText: {},
+})
+const adapter = browserAssessmentAdapter
 
-    if (question.type !== 'text' && !answer?.selected?.length) {
-      return 'Choose an answer before continuing.'
-    }
+const answerError = (
+  question: Questionnaire['questions'][number],
+  answer: AnswerValue
+): string => {
+  if (!question.required) {
+    return ''
   }
 
-  for (const id of answer?.selected ?? []) {
-    const option = question.options?.find((o) => o.id === id)
-
-    if (option?.requiresText && !answer?.otherText?.[id]?.trim()) {
-      return 'Please add details for the selected option.'
-    }
+  if (answer.state !== 'answered') {
+    return 'Please add an answer before continuing.'
   }
 
-  return ''
+  if (question.type === 'text' && !answer.text?.trim()) {
+    return 'Please add an answer before continuing.'
+  }
+
+  if (question.type !== 'text' && answer.selectedOptionKeys.length === 0) {
+    return 'Choose an answer before continuing.'
+  }
+
+  const missingText = answer.selectedOptionKeys.some(
+    (key) =>
+      question.options.find((option) => option.key === key)?.requiresText &&
+      !answer.optionText[key]?.trim()
+  )
+
+  return missingText ? 'Please add details for the selected option.' : ''
 }
+
 export const Assessment = ({
   questionnaireId,
-  initialScenario,
 }: {
   questionnaireId: string
-  initialScenario?: string
 }) => {
-  const scenario = (
-    initialScenario && validScenarios.has(initialScenario)
-      ? initialScenario
-      : 'happy'
-  ) as Scenario
-  const [services] = useState(() => createMockServices(questionnaireId))
-  const [progress, setProgress] = useState<Progress>(blankProgress)
+  const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null)
+  const [submission, setSubmission] = useState<Submission | null>(null)
   const [screen, setScreen] = useState<Screen>('question')
-  const [ready, setReady] = useState(false)
+  const [draft, setDraft] = useState<AnswerValue>(emptyAnswer())
+  const [error, setError] = useState('')
 
   const [saveState, setSaveState] = useState<
     'idle' | 'saving' | 'saved' | 'error'
   >('idle')
-  const [error, setError] = useState('')
-  const [result, setResult] = useState<ReportResult | null>(null)
+  const [report, setReport] = useState<Report | null>(null)
   const [clarification, setClarification] = useState('')
-  const [clarificationPrompt, setClarificationPrompt] = useState('')
-  const [clarified, setClarified] = useState(false)
-  const [failedOnce, setFailedOnce] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null)
-  const isSaving = useRef(false)
+
+  const refreshReport = async (submissionId: string) => {
+    const nextReport = await adapter.getReport(submissionId)
+    setReport(nextReport)
+
+    setScreen('results')
+  }
 
   useEffect(() => {
-    if (questionnaireId !== QUESTIONNAIRE_ID) {
-      setReady(true)
+    let active = true
 
+    void (async () => {
+      try {
+        const content = await adapter.getQuestionnaire(questionnaireId)
+        await adapter.createSession()
+        const resumed = await adapter.getResume(questionnaireId)
+
+        if (!active) {
+          return
+        }
+
+        setQuestionnaire(content)
+
+        if (resumed) {
+          setSubmission(resumed)
+
+          setScreen(
+            resumed.state === 'awaiting_clarification'
+              ? 'clarification'
+              : 'question'
+          )
+        } else {
+          setSubmission(
+            await adapter.createSubmission({
+              questionnaireId,
+              displayedVersionId: content.versionId,
+            })
+          )
+        }
+      } catch {
+        if (active) {
+          setError(
+            'We could not load this assessment. Please try again shortly.'
+          )
+        }
+      }
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [questionnaireId])
+
+  useEffect(() => {
+    heading.current?.focus()
+  }, [screen, submission?.currentStep])
+
+  useEffect(() => {
+    if (
+      !submission ||
+      !['submitted', 'processing'].includes(submission.state)
+    ) {
       return
     }
 
-    if (initialScenario && scenario !== 'happy') {
-      const atQuestion = scenario === 'resume' || scenario === 'save-failure'
+    const timer = window.setInterval(() => {
+      void refreshReport(submission.submissionId).catch(() => undefined)
+    }, 3000)
+    void refreshReport(submission.submissionId).catch(() => undefined)
 
-      const p = {
-        ...blankProgress(),
-        answers: sampleAnswers,
-        step: scenario === 'resume' ? 7 : scenario === 'save-failure' ? 4 : 15,
-        status: atQuestion ? 'in-progress' : 'review',
-      } as Progress
-      setProgress(p)
-      setScreen(atQuestion ? 'question' : 'review')
-    } else {
-      const saved = services.loadProgress()
+    return () => window.clearInterval(timer)
+  }, [submission])
 
-      if (saved?.version) {
-        setProgress(saved)
-
-        setScreen(
-          saved.status === 'review'
-            ? 'review'
-            : saved.status === 'complete'
-              ? 'results'
-              : 'question'
-        )
-      }
-    }
-
-    setReady(true)
-  }, [initialScenario, questionnaireId, scenario, services])
-
-  useEffect(() => {
-    if (ready) {
-      requestAnimationFrame(() => heading.current?.focus())
-    }
-  }, [progress.step, screen, ready])
-
-  if (questionnaireId !== QUESTIONNAIRE_ID) {
+  if (error && !questionnaire) {
     return (
       <main className="narrow center">
-        <h1>Assessment not found</h1>
-        <p>This questionnaire link isn’t available.</p>
+        <h1>Assessment unavailable</h1>
+        <p className="error">{error}</p>
         <Link className="button" href="/">
           Return home
         </Link>
@@ -127,148 +156,120 @@ export const Assessment = ({
     )
   }
 
-  if (!ready) {
+  if (!questionnaire || !submission) {
     return (
-      <main className="narrow center">
+      <main className="narrow center" aria-live="polite">
         <p>Loading your assessment…</p>
       </main>
     )
   }
 
-  const question = questions[progress.step]
-  const category = categories.find((c) => c.id === question?.categoryId)
-  const answer = progress.answers[question?.id] ?? {}
+  const question = questionnaire.questions[submission.currentStep]
 
-  const save = async (next: Progress) => {
-    if (isSaving.current) {
+  const category = questionnaire.categories.find(
+    (candidate) => candidate.key === question?.categoryKey
+  )
+  const currentAnswer = submission.answers[question?.key] ?? draft
+
+  const saveCurrent = async (nextStep: number) => {
+    if (!question) {
       return false
     }
 
-    isSaving.current = true
-    setSaveState('saving')
-
-    try {
-      if (scenario === 'save-failure' && !failedOnce) {
-        setFailedOnce(true)
-        throw Error('simulated')
-      }
-
-      await services.saveProgress(next)
-      setSaveState('saved')
-
-      return true
-    } catch {
-      setSaveState('error')
-
-      return false
-    } finally {
-      isSaving.current = false
-    }
-  }
-
-  const update = (value: Answer) => {
-    setError('')
-    setSaveState('idle')
-
-    setProgress((p) => ({
-      ...p,
-      answers: { ...p.answers, [question.id]: value },
-      updatedAt: new Date().toISOString(),
-    }))
-  }
-
-  const next = async () => {
-    const message = validation(question, answer)
+    const message = answerError(question, currentAnswer)
 
     if (message) {
       setError(message)
 
-      return
+      return false
     }
 
-    const isLast = progress.step === questions.length - 1
+    setSaveState('saving')
+    setError('')
 
-    const nextProgress = {
-      ...progress,
-      step: isLast ? progress.step : progress.step + 1,
-      status: isLast ? 'review' : 'in-progress',
-      updatedAt: new Date().toISOString(),
-    } as Progress
+    try {
+      const answerResult = await adapter.saveAnswer({
+        submissionId: submission.submissionId,
+        questionKey: question.key,
+        expectedRevision: submission.revision,
+        mutationId: crypto.randomUUID(),
+        answer: currentAnswer,
+      })
 
-    if (await save(nextProgress)) {
-      setProgress(nextProgress)
+      const saved = await adapter.saveProgress({
+        submissionId: submission.submissionId,
+        currentStep: nextStep,
+        expectedRevision: answerResult.revision,
+      })
+      setSubmission(saved)
+      setSaveState('saved')
+
+      return true
+    } catch (reason) {
+      if (
+        reason instanceof AssessmentAdapterError &&
+        reason.response.error.code === 'stale_revision'
+      ) {
+        const latest = await adapter.getSubmission(submission.submissionId)
+        setSubmission(latest)
+        setDraft(latest.answers[question.key] ?? draft)
+
+        setError(
+          'This assessment changed in another tab. Your latest saved answer has been restored.'
+        )
+      } else {
+        setError(
+          'We couldn’t save your answer. Your input is still here—please try again.'
+        )
+      }
+
+      setSaveState('error')
+
+      return false
+    }
+  }
+
+  const goNext = async () => {
+    const isLast = submission.currentStep === questionnaire.questions.length - 1
+
+    if (
+      await saveCurrent(
+        isLast ? submission.currentStep : submission.currentStep + 1
+      )
+    ) {
+      setDraft(emptyAnswer())
 
       if (isLast) {
         setScreen('review')
       }
     }
   }
-  const retrySave = () => save(progress)
 
-  const analyse = async () => {
-    for (const q of questions) {
-      const message = validation(q, progress.answers[q.id])
-
-      if (message) {
-        setProgress((p) => ({
-          ...p,
-          step: q.number - 1,
-          status: 'in-progress',
-        }))
-
-        setScreen('question')
-        setError(message)
-
-        return
-      }
-    }
-    setScreen('processing')
-    const response = await services.analyse(scenario, clarified)
-
-    if (response.clarification) {
-      setClarificationPrompt(response.clarification)
-      setScreen('clarification')
-    } else if (response.result) {
-      const completed = { ...progress, status: 'complete' } as Progress
-      await services.saveProgress(completed)
-      setProgress(completed)
-      setResult(response.result)
-      setScreen('results')
-    }
-  }
-
-  const submitClarification = async () => {
-    if (!clarification.trim()) {
-      setError('Please add a specific example before continuing.')
-
-      return
-    }
-
-    setError('')
+  const submit = async () => {
     setSaveState('saving')
+    setError('')
 
-    await services.saveProgress({
-      ...progress,
-      answers: { ...progress.answers, clarification: { text: clarification } },
-    })
+    try {
+      const result = await adapter.submitSubmission({
+        submissionId: submission.submissionId,
+        expectedRevision: submission.revision,
+        mutationId: crypto.randomUUID(),
+      })
 
-    setSaveState('saved')
-    setClarified(true)
-    setScreen('processing')
-    const response = await services.analyse(scenario, true)
+      setSubmission({
+        ...submission,
+        revision: result.revision,
+        state: 'submitted',
+      })
 
-    if (response.result) {
-      setResult(response.result)
-      setScreen('results')
+      setScreen('processing')
+    } catch {
+      setSaveState('error')
+
+      setError(
+        'We couldn’t submit your assessment. Your answers are still saved—please try again.'
+      )
     }
-  }
-
-  const reset = () => {
-    localStorage.removeItem(
-      `workflow-check:${questionnaireId}:creative-workflow-v1`
-    )
-
-    location.href = `/q/${questionnaireId}${initialScenario ? `?scenario=${initialScenario}` : ''}`
   }
 
   if (screen === 'processing') {
@@ -276,62 +277,75 @@ export const Assessment = ({
       <main className="narrow processing" aria-live="polite">
         <div className="loader" />
         <p className="eyebrow">Reviewing your answers</p>
-        <h1 tabIndex={-1} ref={heading}>
-          {scenario === 'ai-failure'
-            ? 'The reflection analysis is taking longer than expected'
-            : 'Looking for the clearest priorities…'}
+        <h1 ref={heading} tabIndex={-1}>
+          Looking for the clearest priorities…
         </h1>
         <p>
-          We’re comparing the answers you gave and preparing a focused result.
-          This should only take a moment in the prototype.
+          We’re preparing your results. You can keep this page open while we
+          finish.
         </p>
       </main>
     )
   }
 
-  if (screen === 'clarification') {
+  if (screen === 'clarification' && submission.clarification) {
     return (
       <main className="narrow question-page">
         <p className="eyebrow">One extra step</p>
-        <h1 tabIndex={-1} ref={heading}>
-          {clarificationPrompt}
+        <h1 ref={heading} tabIndex={-1}>
+          {submission.clarification.prompt}
         </h1>
-        <p className="question-help">
-          A concrete example helps distinguish everyday pressure from a workflow
-          that repeatedly loses control. We’ll only ask this once.
-        </p>
         <textarea
           rows={7}
           value={clarification}
-          onChange={(e) => setClarification(e.target.value)}
-          aria-describedby={error ? 'clarify-error' : undefined}
+          onChange={(event) => setClarification(event.target.value)}
         />
-        {error && (
-          <p id="clarify-error" className="error">
-            {error}
-          </p>
-        )}
+        {error && <p className="error">{error}</p>}
         <div className="question-actions">
           <button
             disabled={saveState === 'saving'}
-            onClick={submitClarification}
+            onClick={async () => {
+              if (!clarification.trim()) {
+                setError('Please add a specific example before continuing.')
+
+                return
+              }
+
+              setSaveState('saving')
+
+              try {
+                await adapter.submitClarification({
+                  submissionId: submission.submissionId,
+                  evaluationKey: submission.clarification!.evaluationKey,
+                  response: clarification,
+                })
+
+                setSubmission({
+                  ...submission,
+                  state: 'processing',
+                  clarification: null,
+                })
+
+                setScreen('processing')
+              } catch {
+                setSaveState('error')
+
+                setError(
+                  'We couldn’t save that response. Your input is still here—please try again.'
+                )
+              }
+            }}
           >
-            {saveState === 'saving' ? 'Saving…' : 'Continue analysis'}
+            Continue analysis
           </button>
         </div>
       </main>
     )
   }
 
-  if (screen === 'results') {
+  if (screen === 'results' && report) {
     return (
-      <ResultsView
-        result={
-          result ??
-          (scenario === 'healthy' ? reportFixtures.healthy : reportFixtures.two)
-        }
-        scenario={scenario}
-      />
+      <ResultsView report={report} submissionId={submission.submissionId} />
     )
   }
 
@@ -341,64 +355,64 @@ export const Assessment = ({
         <div className="review-head">
           <div>
             <p className="eyebrow">Ready to review</p>
-            <h1 tabIndex={-1} ref={heading}>
+            <h1 ref={heading} tabIndex={-1}>
               Your answers
             </h1>
-            <p>
-              Check anything you want to change. Optional questions you skipped
-              stay unscored.
-            </p>
+            <p>Check anything you want to change before submitting.</p>
           </div>
-          <button className="secondary small" onClick={reset}>
-            Reset prototype
-          </button>
         </div>
-        {categories.map((cat) => {
-          const qs = questions.filter((q) => q.categoryId === cat.id)
+        {questionnaire.categories.map((group) => (
+          <section className="review-group" key={group.key}>
+            <h2>{group.label}</h2>
+            {questionnaire.questions
+              .filter((item) => item.categoryKey === group.key)
+              .map((item) => (
+                <article key={item.key}>
+                  <div>
+                    <span>Q{item.number}</span>
+                    <h3>{item.prompt}</h3>
+                    <p>
+                      {submission.answers[item.key]?.state === 'answered'
+                        ? 'Answered'
+                        : 'Skipped'}
+                    </p>
+                  </div>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setSubmission({
+                        ...submission,
+                        currentStep: item.number - 1,
+                      })
 
-          return (
-            <section className="review-group" key={cat.id}>
-              <h2>{cat.name}</h2>
-              {qs.map((q) => {
-                const display = formatAnswerForReview(q, progress.answers[q.id])
-
-                return (
-                  <article key={q.id}>
-                    <div>
-                      <span>Q{q.number}</span>
-                      <h3>{q.prompt}</h3>
-                      <p className={!display ? 'skipped' : ''}>
-                        {display || 'Skipped (optional)'}
-                      </p>
-                    </div>
-                    <button
-                      className="text-button"
-                      onClick={() => {
-                        setProgress((p) => ({
-                          ...p,
-                          step: q.number - 1,
-                          status: 'in-progress',
-                        }))
-
-                        setScreen('question')
-                      }}
-                    >
-                      Edit<span className="sr-only"> question {q.number}</span>
-                    </button>
-                  </article>
-                )
-              })}
-            </section>
-          )
-        })}
-        <ScoringDebugPanel answers={progress.answers} />
+                      setDraft(submission.answers[item.key] ?? emptyAnswer())
+                      setScreen('question')
+                    }}
+                  >
+                    Edit<span className="sr-only"> question {item.number}</span>
+                  </button>
+                </article>
+              ))}
+          </section>
+        ))}
+        {error && <p className="error">{error}</p>}
         <div className="submit-bar">
           <div>
             <strong>Ready for your workflow check?</strong>
             <span>Your results do not require an email.</span>
           </div>
-          <button onClick={analyse}>See my results</button>
+          <button disabled={saveState === 'saving'} onClick={submit}>
+            See my results
+          </button>
         </div>
+      </main>
+    )
+  }
+
+  if (!question) {
+    return (
+      <main className="narrow center">
+        <h1>Assessment complete</h1>
       </main>
     )
   }
@@ -406,14 +420,16 @@ export const Assessment = ({
   return (
     <main className="narrow question-page">
       <div className="progress-row">
-        <span>{category?.name}</span>
+        <span>{category?.label}</span>
         <span>
-          Question {question.number} of {questions.length}
+          Question {question.number} of {questionnaire.questions.length}
         </span>
       </div>
       <div className="progress-track">
         <span
-          style={{ width: `${(question.number / questions.length) * 100}%` }}
+          style={{
+            width: `${(question.number / questionnaire.questions.length) * 100}%`,
+          }}
         />
       </div>
       <p className="eyebrow">{question.required ? 'Required' : 'Optional'}</p>
@@ -425,47 +441,42 @@ export const Assessment = ({
       )}
       <QuestionField
         question={question}
-        value={answer}
-        onChange={update}
+        value={currentAnswer}
+        onChange={(value) => {
+          setDraft(value)
+          setError('')
+          setSaveState('idle')
+        }}
         error={error}
       />
       <div className="question-actions">
         <button
           className="secondary"
-          disabled={question.number === 1}
-          onClick={() =>
-            setProgress((p) => ({ ...p, step: Math.max(0, p.step - 1) }))
-          }
+          disabled={submission.currentStep === 0}
+          onClick={() => {
+            setSubmission({
+              ...submission,
+              currentStep: Math.max(0, submission.currentStep - 1),
+            })
+
+            setDraft(emptyAnswer())
+          }}
         >
           Back
         </button>
         <div className={`save-state ${saveState}`} aria-live="polite">
-          {saveState === 'saving' ? (
-            'Saving…'
-          ) : saveState === 'saved' ? (
-            'Saved'
-          ) : saveState === 'error' ? (
-            <>
-              <span>Couldn’t save.</span>{' '}
-              <button className="text-button" onClick={retrySave}>
-                Try again
-              </button>
-            </>
-          ) : (
-            ''
-          )}
+          {saveState === 'saving'
+            ? 'Saving…'
+            : saveState === 'saved'
+              ? 'Saved'
+              : ''}
         </div>
-        <button onClick={next}>
-          {question.number === questions.length ? 'Review answers' : 'Next'}
+        <button disabled={saveState === 'saving'} onClick={goNext}>
+          {question.number === questionnaire.questions.length
+            ? 'Review answers'
+            : 'Next'}
         </button>
       </div>
-      <button className="reset-link" onClick={reset}>
-        Reset prototype progress
-      </button>
-      <ScoringDebugPanel
-        answers={progress.answers}
-        currentQuestionId={question.id}
-      />
     </main>
   )
 }

@@ -1,51 +1,49 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useState } from 'react'
 
-import { QUESTIONNAIRE_ID } from '@/lib/fixtures'
-import { createMockServices } from '@/lib/mock-services'
-import type { Scenario } from '@/lib/types'
-
-interface ContactFormValues {
-  email: string
-  name: string
-  message: string
-}
+import { browserAssessmentAdapter } from '@/lib/assessment/browserAdapter'
 
 interface ContactStepProps {
-  scenario: Scenario
+  submissionId: string
   onBack: () => void
   onComplete: () => void
 }
 
 export const ContactStep = ({
-  scenario,
+  submissionId,
   onBack,
   onComplete,
 }: ContactStepProps) => {
-  const [services] = useState(() => createMockServices(QUESTIONNAIRE_ID))
-  const [submissionError, setSubmissionError] = useState('')
-  const form = useForm<ContactFormValues>()
-  const heading = useRef<HTMLHeadingElement>(null)
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [isSending, setIsSending] = useState(false)
 
-  useEffect(() => {
-    heading.current?.focus()
-  }, [])
-
-  const handleSubmit = form.handleSubmit(async (values) => {
-    const shouldFail = scenario === 'contact-error' && !submissionError
-    setSubmissionError('')
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError('')
+    setIsSending(true)
 
     try {
-      await services.submitContact(values, shouldFail)
+      await browserAssessmentAdapter.submitContact({
+        submissionId,
+        email,
+        name: name.trim() || null,
+        message: message.trim() || null,
+        idempotencyKey: crypto.randomUUID(),
+      })
+
       onComplete()
     } catch {
-      setSubmissionError(
+      setError(
         'We couldn’t save your request. Your details are still here—please try again.'
       )
+    } finally {
+      setIsSending(false)
     }
-  })
+  }
 
   return (
     <main className="contact-step narrow">
@@ -53,46 +51,43 @@ export const ContactStep = ({
         ← Back to results
       </button>
       <p className="eyebrow">Optional next step</p>
-      <h1 ref={heading} tabIndex={-1}>
-        Tell us where you’d like help
-      </h1>
+      <h1>Tell us where you’d like help</h1>
       <p className="lede">
         Share a little context and your request will stay connected to this
         workflow assessment.
       </p>
-      <form className="contact-form" onSubmit={handleSubmit} noValidate>
+      <form className="contact-form" onSubmit={submit} noValidate>
         <div className="form-grid">
           <label>
             Email <span>Required</span>
             <input
               type="email"
               autoComplete="email"
-              {...form.register('email', {
-                required: 'Enter your email address.',
-                pattern: {
-                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: 'Enter a valid email address.',
-                },
-              })}
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
             />
-            {form.formState.errors.email && (
-              <small className="error">
-                {form.formState.errors.email.message}
-              </small>
-            )}
           </label>
           <label>
             Name <span>Optional</span>
-            <input autoComplete="name" {...form.register('name')} />
+            <input
+              autoComplete="name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
           </label>
         </div>
         <label>
           What would you like help with? <span>Optional</span>
-          <textarea rows={5} {...form.register('message')} />
+          <textarea
+            rows={5}
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+          />
         </label>
-        {submissionError && <p className="error">{submissionError}</p>}
-        <button disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? 'Sending…' : 'Send request'}
+        {error && <p className="error">{error}</p>}
+        <button disabled={isSending}>
+          {isSending ? 'Sending…' : 'Send request'}
         </button>
       </form>
     </main>

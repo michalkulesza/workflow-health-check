@@ -85,6 +85,13 @@ export const submissionSchema = z.object({
   currentStep: z.number().int().nonnegative(),
   state: submissionStateSchema,
   answers: z.record(stableKeySchema, answerValueSchema),
+  clarification: z
+    .object({
+      evaluationKey: stableKeySchema,
+      prompt: z.string().min(1).max(4_000),
+    })
+    .nullable()
+    .default(null),
 })
 
 export const createSubmissionInputSchema = z
@@ -124,6 +131,16 @@ export const submitSubmissionInputSchema = z
     mutationId: mutationIdSchema,
   })
   .strict()
+
+export const submitSubmissionResultSchema = z.object({
+  revision: revisionSchema,
+  runId: z.string().min(1),
+  state: z.literal('submitted'),
+})
+
+export const clarificationResponseResultSchema = z.object({
+  state: z.literal('processing'),
+})
 
 export const clarificationResponseInputSchema = z
   .object({
@@ -208,8 +225,14 @@ export type AnswerMutationInput = z.infer<typeof answerMutationInputSchema>
 export type AnswerMutationResult = z.infer<typeof answerMutationResultSchema>
 export type ProgressMutationInput = z.infer<typeof progressMutationInputSchema>
 export type SubmitSubmissionInput = z.infer<typeof submitSubmissionInputSchema>
+export type SubmitSubmissionResult = z.infer<
+  typeof submitSubmissionResultSchema
+>
 export type ClarificationResponseInput = z.infer<
   typeof clarificationResponseInputSchema
+>
+export type ClarificationResponseResult = z.infer<
+  typeof clarificationResponseResultSchema
 >
 export type Report = z.infer<typeof reportSchema>
 export type NotificationRequest = z.infer<typeof notificationRequestSchema>

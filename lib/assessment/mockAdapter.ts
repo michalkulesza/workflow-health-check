@@ -6,9 +6,13 @@ import {
   landingSchema,
   notificationRequestSchema,
   progressMutationInputSchema,
+  clarificationResponseInputSchema,
+  clarificationResponseResultSchema,
   questionnaireSchema,
   reportSchema,
   submissionSchema,
+  submitSubmissionInputSchema,
+  submitSubmissionResultSchema,
   type AnswerMutationInput,
   type AnswerMutationResult,
   type ApiError,
@@ -65,6 +69,7 @@ export const createMockAssessmentAdapter = (
   }
 
   return {
+    createSession: async () => undefined,
     getLanding: async () => landing,
     getQuestionnaire: async (questionnaireId) => {
       if (questionnaireId !== questionnaire.questionnaireId) {
@@ -188,6 +193,36 @@ export const createMockAssessmentAdapter = (
       submissions.set(parsed.submissionId, nextSubmission)
 
       return nextSubmission
+    },
+    submitSubmission: async (input) => {
+      const parsed = submitSubmissionInputSchema.parse(input)
+      const submission = getStoredSubmission(parsed.submissionId)
+
+      if (submission.revision !== parsed.expectedRevision) {
+        throw adapterError(
+          'stale_revision',
+          'Assessment has changed in another tab',
+          submission.revision
+        )
+      }
+
+      const nextSubmission = submissionSchema.parse({
+        ...submission,
+        state: 'processing',
+      })
+      submissions.set(parsed.submissionId, nextSubmission)
+
+      return submitSubmissionResultSchema.parse({
+        revision: submission.revision,
+        runId: globalThis.crypto.randomUUID(),
+        state: 'submitted',
+      })
+    },
+    submitClarification: async (input) => {
+      clarificationResponseInputSchema.parse(input)
+      getStoredSubmission(input.submissionId)
+
+      return clarificationResponseResultSchema.parse({ state: 'processing' })
     },
     getReport: async (submissionId) => {
       getStoredSubmission(submissionId)

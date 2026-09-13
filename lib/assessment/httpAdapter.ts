@@ -11,6 +11,10 @@ import {
   progressMutationInputSchema,
   questionnaireSchema,
   reportSchema,
+  clarificationResponseInputSchema,
+  clarificationResponseResultSchema,
+  submitSubmissionInputSchema,
+  submitSubmissionResultSchema,
   submissionSchema,
   type AnswerMutationInput,
   type AnswerMutationResult,
@@ -22,16 +26,22 @@ import {
   type Questionnaire,
   type Report,
   type Submission,
+  type SubmitSubmissionInput,
+  type SubmitSubmissionResult,
+  type ClarificationResponseInput,
+  type ClarificationResponseResult,
 } from './contracts'
 import { AssessmentAdapterError, type AssessmentAdapter } from './adapter'
 
 const acceptedResponseSchema = z.object({ accepted: z.literal(true) }).strict()
+const sessionResponseSchema = z.object({ csrfToken: z.string().min(1) })
 
 type Fetcher = typeof fetch
 
 export class HttpAssessmentAdapter implements AssessmentAdapter {
   private readonly basePath: string
   private readonly fetcher: Fetcher
+  private csrfToken: string | null = null
 
   constructor({
     basePath = '/api/assessment/v1',
@@ -42,6 +52,26 @@ export class HttpAssessmentAdapter implements AssessmentAdapter {
   } = {}) {
     this.basePath = basePath.replace(/\/$/, '')
     this.fetcher = fetcher
+  }
+
+  async createSession(): Promise<void> {
+    const response = await this.fetcher(`${this.basePath}/sessions`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    const body: unknown = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      throw new AssessmentAdapterError({
+        error: {
+          code: 'temporary_failure',
+          message: 'Could not start an assessment session',
+          requestId: 'session-start',
+        },
+      })
+    }
+
+    this.csrfToken = sessionResponseSchema.parse(body).csrfToken
   }
 
   async getLanding(): Promise<Landing> {
@@ -106,6 +136,30 @@ export class HttpAssessmentAdapter implements AssessmentAdapter {
     )
   }
 
+  async submitSubmission(
+    input: SubmitSubmissionInput
+  ): Promise<SubmitSubmissionResult> {
+    const parsed = submitSubmissionInputSchema.parse(input)
+
+    return this.request(
+      `/submissions/${encodeURIComponent(parsed.submissionId)}/submit`,
+      { method: 'POST', body: parsed },
+      submitSubmissionResultSchema
+    )
+  }
+
+  async submitClarification(
+    input: ClarificationResponseInput
+  ): Promise<ClarificationResponseResult> {
+    const parsed = clarificationResponseInputSchema.parse(input)
+
+    return this.request(
+      `/submissions/${encodeURIComponent(parsed.submissionId)}/clarification`,
+      { method: 'POST', body: parsed },
+      clarificationResponseResultSchema
+    )
+  }
+
   async requestNotification(input: NotificationRequest): Promise<void> {
     await this.request(
       `/submissions/${encodeURIComponent(input.submissionId)}/notification`,
@@ -133,7 +187,12 @@ export class HttpAssessmentAdapter implements AssessmentAdapter {
       headers:
         options.body === undefined
           ? undefined
-          : { 'content-type': 'application/json' },
+          : {
+              'content-type': 'application/json',
+              ...(this.csrfToken
+                ? { 'x-assessment-csrf': this.csrfToken }
+                : {}),
+            },
       body:
         options.body === undefined ? undefined : JSON.stringify(options.body),
     })

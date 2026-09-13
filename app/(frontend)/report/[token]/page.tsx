@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import { ResultsView } from '@/components/ResultsView'
-import { reportFixtures } from '@/lib/fixtures'
+import { PrivateReport } from '@/components/PrivateReport'
 export default async function Page({
   params,
 }: {
@@ -24,5 +23,5 @@ export default async function Page({
     )
   }
 
-  return <ResultsView result={reportFixtures.two} reportLink />
+  return <PrivateReport token={token} />
 }

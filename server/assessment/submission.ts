@@ -91,5 +91,33 @@ export const toSubmissionDTO = async ({
     currentStep: submission.currentStep,
     state: submission.state,
     answers: includeAnswers ? await loadAnswers(payload, submission.id) : {},
+    clarification: await loadClarification(payload, submission.id),
   })
+}
+
+const loadClarification = async (
+  payload: Payload,
+  submissionID: number
+): Promise<{ evaluationKey: string; prompt: string } | null> => {
+  const result = await payload.db.pool.query<{
+    evaluation_key: string
+    clarification_prompt: string
+  }>(
+    `SELECT evaluation.evaluation_key, evaluation.clarification_prompt
+       FROM scoring_ai_evaluations evaluation
+       JOIN scoring_runs run ON run.id = evaluation.scoring_run_id
+      WHERE run.submission_id = $1
+        AND evaluation.state = 'waiting_for_input'
+      ORDER BY run.run_number DESC
+      LIMIT 1`,
+    [submissionID]
+  )
+  const clarification = result.rows[0]
+
+  return clarification
+    ? {
+        evaluationKey: clarification.evaluation_key,
+        prompt: clarification.clarification_prompt,
+      }
+    : null
 }

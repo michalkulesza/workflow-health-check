@@ -21,7 +21,7 @@ export const GET = async (request: Request, { params }: Props) => {
     where: {
       and: [
         { session: { equals: session.id } },
-        { state: { equals: 'in_progress' } },
+        { state: { in: ['in_progress', 'awaiting_clarification'] } },
       ],
     },
     sort: '-updatedAt',
