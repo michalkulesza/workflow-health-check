@@ -7,6 +7,7 @@ import * as migration_20260913_150100_payload_lock_relations from './20260913_15
 import * as migration_20260913_160000_ai_evaluations from './20260913_160000_ai_evaluations'
 import * as migration_20260913_170000_reports from './20260913_170000_reports'
 import * as migration_20260913_180000_report_notifications from './20260913_180000_report_notifications'
+import * as migration_20260913_190000_lead_pipeline from './20260913_190000_lead_pipeline'
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20260913_180000_report_notifications.up,
     down: migration_20260913_180000_report_notifications.down,
     name: '20260913_180000_report_notifications',
+  },
+  {
+    up: migration_20260913_190000_lead_pipeline.up,
+    down: migration_20260913_190000_lead_pipeline.down,
+    name: '20260913_190000_lead_pipeline',
   },
 ]

@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionConfig } from 'payload'
 
 import { adminOnlyAccess } from './access'
 
@@ -7,6 +7,20 @@ export const Answers: CollectionConfig = {
   admin: { useAsTitle: 'questionKey' },
   access: adminOnlyAccess,
   indexes: [{ fields: ['submission', 'questionKey'], unique: true }],
+  hooks: {
+    beforeChange: [
+      ({ operation }) => {
+        if (operation === 'update') {
+          throw new APIError('Assessment answers are immutable', 403)
+        }
+      },
+    ],
+    beforeDelete: [
+      () => {
+        throw new APIError('Assessment answers are immutable', 403)
+      },
+    ],
+  },
   fields: [
     {
       name: 'submission',

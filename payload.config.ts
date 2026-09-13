@@ -8,6 +8,7 @@ import { Admins } from './server/collections/Admins'
 import { AnonymousSessions } from './server/collections/AnonymousSessions'
 import { Answers } from './server/collections/Answers'
 import { AnswerMutations } from './server/collections/AnswerMutations'
+import { Leads } from './server/collections/Leads'
 import { Questionnaires } from './server/collections/Questionnaires'
 import { QuestionnaireVersions } from './server/collections/QuestionnaireVersions'
 import { Submissions } from './server/collections/Submissions'
@@ -51,6 +52,7 @@ export default buildConfig({
     AssessmentOutbox,
     Answers,
     AnswerMutations,
+    Leads,
   ],
   globals: [LandingPage],
   endpoints: [

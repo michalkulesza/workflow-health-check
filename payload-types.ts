@@ -77,6 +77,7 @@ export interface Config {
     'assessment-outbox': AssessmentOutbox;
     answers: Answer;
     'answer-mutations': AnswerMutation;
+    leads: Lead;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -95,6 +96,7 @@ export interface Config {
     'assessment-outbox': AssessmentOutboxSelect<false> | AssessmentOutboxSelect<true>;
     answers: AnswersSelect<false> | AnswersSelect<true>;
     'answer-mutations': AnswerMutationsSelect<false> | AnswerMutationsSelect<true>;
+    leads: LeadsSelect<false> | LeadsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -460,6 +462,36 @@ export interface AnswerMutation {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "leads".
+ */
+export interface Lead {
+  id: number;
+  submission: number | Submission;
+  scoringRun?: (number | null) | ScoringRun;
+  email: string;
+  name?: string | null;
+  message?: string | null;
+  /**
+   * Pipeline: New → Contacted → In progress → Closed.
+   */
+  stage: 'new' | 'contacted' | 'in_progress' | 'closed';
+  notes?: string | null;
+  stageHistory:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  captureMutationId?: string | null;
+  capturePayloadHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -630,6 +662,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'answer-mutations';
         value: number | AnswerMutation;
+      } | null)
+    | ({
+        relationTo: 'leads';
+        value: number | Lead;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -861,6 +897,24 @@ export interface AnswerMutationsSelect<T extends boolean = true> {
   mutationId?: T;
   payloadHash?: T;
   resultRevision?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "leads_select".
+ */
+export interface LeadsSelect<T extends boolean = true> {
+  submission?: T;
+  scoringRun?: T;
+  email?: T;
+  name?: T;
+  message?: T;
+  stage?: T;
+  notes?: T;
+  stageHistory?: T;
+  captureMutationId?: T;
+  capturePayloadHash?: T;
   updatedAt?: T;
   createdAt?: T;
 }
