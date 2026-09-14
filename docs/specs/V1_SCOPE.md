@@ -154,6 +154,8 @@ Do not set arbitrary conversion targets before observing an initial baseline. At
 
 ### Preview and initial-launch verification
 
+Step 6 status is reconciled in [the complete-journey handoff](STEP_6_COMPLETE_JOURNEY_HANDOFF.md). The completed local checks below establish the fallback journey and foundations; provider-controlled completion, clarification, and the remaining Step 6 regression evidence are still open. A healthy restart does not by itself prove recovery of interrupted queued work.
+
 - [x] Install/enable Docker, run the disposable PostgreSQL stack, and record migration, seed, first-admin bootstrap, worker-heartbeat, restart, and persistence evidence (2026-09-14: Docker 29.7.2, PostgreSQL 16.11, fresh migration/seed, guarded bootstrap, and two worker/health-check cycles).
 - [x] Build and inspect the tagged production-style image; verify the migration, web, and worker roles run from that same image (2026-09-14: `workflow-health-check:preview-local-20260914`, digest `sha256:cab162…`).
 - [x] Run the configured-preview browser smoke suite with `E2E_BASE_URL` and a published `E2E_QUESTIONNAIRE_ID`; record accessibility, noindex, private-access, and invalid-report-token results (2026-09-14: `E2E_BASE_URL=https://localhost`, published seed UUID `5dc13945-9cb8-4e6b-b504-187c885e0e34`, and disposable-preview-only `E2E_IGNORE_HTTPS_ERRORS=true`; Playwright Chromium passed 2/2 checks for mobile accessibility/overflow, questionnaire noindex, unauthenticated private-access `401` plus `no-store`, and unavailable arbitrary report token). External previews must retain certificate verification.

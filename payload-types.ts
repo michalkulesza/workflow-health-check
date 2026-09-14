@@ -59,287 +59,273 @@ export type SupportedTimezones =
   | 'Pacific/Guam'
   | 'Pacific/Noumea'
   | 'Pacific/Auckland'
-  | 'Pacific/Fiji'
+  | 'Pacific/Fiji';
 
 export interface Config {
   auth: {
-    admins: AdminAuthOperations
-  }
-  blocks: {}
+    admins: AdminAuthOperations;
+  };
+  blocks: {};
   collections: {
-    admins: Admin
-    'anonymous-sessions': AnonymousSession
-    questionnaires: Questionnaire
-    'questionnaire-versions': QuestionnaireVersion
-    submissions: Submission
-    'scoring-runs': ScoringRun
-    'scoring-results': ScoringResult
-    'assessment-outbox': AssessmentOutbox
-    answers: Answer
-    'answer-mutations': AnswerMutation
-    leads: Lead
-    'payload-kv': PayloadKv
-    'payload-jobs': PayloadJob
-    'payload-locked-documents': PayloadLockedDocument
-    'payload-preferences': PayloadPreference
-    'payload-migrations': PayloadMigration
-  }
-  collectionsJoins: {}
+    admins: Admin;
+    'anonymous-sessions': AnonymousSession;
+    questionnaires: Questionnaire;
+    'questionnaire-versions': QuestionnaireVersion;
+    submissions: Submission;
+    'scoring-runs': ScoringRun;
+    'scoring-results': ScoringResult;
+    'assessment-outbox': AssessmentOutbox;
+    answers: Answer;
+    'answer-mutations': AnswerMutation;
+    leads: Lead;
+    'payload-kv': PayloadKv;
+    'payload-jobs': PayloadJob;
+    'payload-locked-documents': PayloadLockedDocument;
+    'payload-preferences': PayloadPreference;
+    'payload-migrations': PayloadMigration;
+  };
+  collectionsJoins: {};
   collectionsSelect: {
-    admins: AdminsSelect<false> | AdminsSelect<true>
-    'anonymous-sessions':
-      AnonymousSessionsSelect<false> | AnonymousSessionsSelect<true>
-    questionnaires: QuestionnairesSelect<false> | QuestionnairesSelect<true>
-    'questionnaire-versions':
-      QuestionnaireVersionsSelect<false> | QuestionnaireVersionsSelect<true>
-    submissions: SubmissionsSelect<false> | SubmissionsSelect<true>
-    'scoring-runs': ScoringRunsSelect<false> | ScoringRunsSelect<true>
-    'scoring-results': ScoringResultsSelect<false> | ScoringResultsSelect<true>
-    'assessment-outbox':
-      AssessmentOutboxSelect<false> | AssessmentOutboxSelect<true>
-    answers: AnswersSelect<false> | AnswersSelect<true>
-    'answer-mutations':
-      AnswerMutationsSelect<false> | AnswerMutationsSelect<true>
-    leads: LeadsSelect<false> | LeadsSelect<true>
-    'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>
-    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>
-    'payload-locked-documents':
-      PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>
-    'payload-preferences':
-      PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>
-    'payload-migrations':
-      PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>
-  }
+    admins: AdminsSelect<false> | AdminsSelect<true>;
+    'anonymous-sessions': AnonymousSessionsSelect<false> | AnonymousSessionsSelect<true>;
+    questionnaires: QuestionnairesSelect<false> | QuestionnairesSelect<true>;
+    'questionnaire-versions': QuestionnaireVersionsSelect<false> | QuestionnaireVersionsSelect<true>;
+    submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
+    'scoring-runs': ScoringRunsSelect<false> | ScoringRunsSelect<true>;
+    'scoring-results': ScoringResultsSelect<false> | ScoringResultsSelect<true>;
+    'assessment-outbox': AssessmentOutboxSelect<false> | AssessmentOutboxSelect<true>;
+    answers: AnswersSelect<false> | AnswersSelect<true>;
+    'answer-mutations': AnswerMutationsSelect<false> | AnswerMutationsSelect<true>;
+    leads: LeadsSelect<false> | LeadsSelect<true>;
+    'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
+    'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
+    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
+    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
+  };
   db: {
-    defaultIDType: number
-  }
-  fallbackLocale: null
+    defaultIDType: number;
+  };
+  fallbackLocale: null;
   globals: {
-    'landing-page': LandingPage
-  }
+    'landing-page': LandingPage;
+  };
   globalsSelect: {
-    'landing-page': LandingPageSelect<false> | LandingPageSelect<true>
-  }
-  locale: null
+    'landing-page': LandingPageSelect<false> | LandingPageSelect<true>;
+  };
+  locale: null;
   widgets: {
-    collections: CollectionsWidget
-  }
-  user: Admin
+    collections: CollectionsWidget;
+  };
+  user: Admin;
   jobs: {
     tasks: {
-      fixture: TaskFixture
-      'deterministic-score': TaskDeterministicScore
-      'ai-evaluation': TaskAiEvaluation
-      'category-aggregation': TaskCategoryAggregation
-      'assessment-narrative': TaskAssessmentNarrative
-      'report-email': TaskReportEmail
+      fixture: TaskFixture;
+      'deterministic-score': TaskDeterministicScore;
+      'ai-evaluation': TaskAiEvaluation;
+      'category-aggregation': TaskCategoryAggregation;
+      'assessment-narrative': TaskAssessmentNarrative;
+      'report-email': TaskReportEmail;
       inline: {
-        input: unknown
-        output: unknown
-      }
-    }
-    workflows: unknown
-  }
+        input: unknown;
+        output: unknown;
+      };
+    };
+    workflows: unknown;
+  };
 }
 export interface AdminAuthOperations {
   forgotPassword: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   login: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   registerFirstUser: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   unlock: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "admins".
  */
 export interface Admin {
-  id: number
-  updatedAt: string
-  createdAt: string
-  email: string
-  resetPasswordToken?: string | null
-  resetPasswordExpiration?: string | null
-  salt?: string | null
-  hash?: string | null
-  loginAttempts?: number | null
-  lockUntil?: string | null
+  id: number;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
   sessions?:
     | {
-        id: string
-        createdAt?: string | null
-        expiresAt: string
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
       }[]
-    | null
-  password?: string | null
-  collection: 'admins'
+    | null;
+  password?: string | null;
+  collection: 'admins';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "anonymous-sessions".
  */
 export interface AnonymousSession {
-  id: number
-  tokenHash: string
-  csrfTokenHash: string
-  expiresAt: string
-  lastSeenAt: string
-  updatedAt: string
-  createdAt: string
+  id: number;
+  tokenHash: string;
+  csrfTokenHash: string;
+  expiresAt: string;
+  lastSeenAt: string;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "questionnaires".
  */
 export interface Questionnaire {
-  id: number
-  name: string
-  publicId: string
-  currentPublishedVersion?: (number | null) | QuestionnaireVersion
-  draftVersion?: (number | null) | QuestionnaireVersion
-  updatedAt: string
-  createdAt: string
+  id: number;
+  name: string;
+  publicId: string;
+  currentPublishedVersion?: (number | null) | QuestionnaireVersion;
+  draftVersion?: (number | null) | QuestionnaireVersion;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "questionnaire-versions".
  */
 export interface QuestionnaireVersion {
-  id: number
-  questionnaire: number | Questionnaire
+  id: number;
+  questionnaire: number | Questionnaire;
   /**
    * Assigned only when this draft becomes a published version.
    */
-  versionNumber?: number | null
-  status: 'draft' | 'published'
+  versionNumber?: number | null;
+  status: 'draft' | 'published';
   categories?:
     | {
-        key: string
-        label: string
-        order: number
-        scored?: boolean | null
-        maxPoints?: number | null
-        attentionThreshold?: number | null
-        minimumCoverage?: number | null
-        id?: string | null
+        key: string;
+        label: string;
+        order: number;
+        scored?: boolean | null;
+        maxPoints?: number | null;
+        attentionThreshold?: number | null;
+        minimumCoverage?: number | null;
+        id?: string | null;
       }[]
-    | null
+    | null;
   questions?:
     | {
-        key: string
-        number: number
-        categoryKey: string
-        prompt: string
-        type: 'single' | 'multi' | 'text'
-        required: boolean
-        instructions?: string | null
-        maxSelections?: number | null
+        key: string;
+        number: number;
+        categoryKey: string;
+        prompt: string;
+        type: 'single' | 'multi' | 'text';
+        required: boolean;
+        instructions?: string | null;
+        maxSelections?: number | null;
         options?:
           | {
-              key: string
-              label: string
-              exclusive?: boolean | null
-              requiresText?: boolean | null
-              value?: number | null
-              penalty?: number | null
-              notApplicable?: boolean | null
-              id?: string | null
+              key: string;
+              label: string;
+              exclusive?: boolean | null;
+              requiresText?: boolean | null;
+              value?: number | null;
+              penalty?: number | null;
+              notApplicable?: boolean | null;
+              id?: string | null;
             }[]
-          | null
+          | null;
         /**
          * Validated version-specific scoring configuration.
          */
         scoring:
           | {
-              [k: string]: unknown
+              [k: string]: unknown;
             }
           | unknown[]
           | string
           | number
           | boolean
-          | null
-        id?: string | null
+          | null;
+        id?: string | null;
       }[]
-    | null
+    | null;
   /**
    * Validated grouped AI rubric configuration, including model and prompt versions.
    */
   aiEvaluations?:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
+    | null;
   definition:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  contentHash: string
-  publishedAt?: string | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  contentHash: string;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "submissions".
  */
 export interface Submission {
-  id: number
-  externalId: string
-  session: number | AnonymousSession
-  questionnaireVersion: number | QuestionnaireVersion
-  state:
-    | 'in_progress'
-    | 'submitted'
-    | 'processing'
-    | 'awaiting_clarification'
-    | 'ready'
-    | 'partial'
-    | 'failed'
-  revision: number
-  currentStep: number
+  id: number;
+  externalId: string;
+  session: number | AnonymousSession;
+  questionnaireVersion: number | QuestionnaireVersion;
+  state: 'in_progress' | 'submitted' | 'processing' | 'awaiting_clarification' | 'ready' | 'partial' | 'failed';
+  revision: number;
+  currentStep: number;
   submittedSnapshot?:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  submittedSnapshotHash?: string | null
-  submitMutationId?: string | null
-  submitPayloadHash?: string | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  submittedSnapshotHash?: string | null;
+  submitMutationId?: string | null;
+  submitPayloadHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "scoring-runs".
  */
 export interface ScoringRun {
-  id: number
-  submission: number | Submission
-  questionnaireVersion: number | QuestionnaireVersion
-  runNumber: number
+  id: number;
+  submission: number | Submission;
+  questionnaireVersion: number | QuestionnaireVersion;
+  runNumber: number;
   state:
     | 'queued'
     | 'processing'
@@ -348,236 +334,231 @@ export interface ScoringRun {
     | 'waiting_for_input'
     | 'complete'
     | 'partial'
-    | 'failed'
+    | 'failed';
   answerSnapshot:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  answerSnapshotHash: string
+    | null;
+  answerSnapshotHash: string;
   definitionSnapshot:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  engineVersion: string
+    | null;
+  engineVersion: string;
   report?:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "scoring-results".
  */
 export interface ScoringResult {
-  id: number
-  scoringRun: number | ScoringRun
-  categoryKey: string
-  normalized?: number | null
-  points?: number | null
-  coverage?: number | null
-  eligible: boolean
+  id: number;
+  scoringRun: number | ScoringRun;
+  categoryKey: string;
+  normalized?: number | null;
+  points?: number | null;
+  coverage?: number | null;
+  eligible: boolean;
   components:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "assessment-outbox".
  */
 export interface AssessmentOutbox {
-  id: number
-  workKey: string
-  type:
-    | 'deterministic_score'
-    | 'ai_evaluation'
-    | 'category_aggregation'
-    | 'narrative'
-    | 'report_email'
+  id: number;
+  workKey: string;
+  type: 'deterministic_score' | 'ai_evaluation' | 'category_aggregation' | 'narrative' | 'report_email';
   payload:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  state: 'pending' | 'leased' | 'dispatched' | 'completed'
-  attempts: number
-  leaseToken?: string | null
-  leaseExpiresAt?: string | null
-  payloadJobId?: number | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  state: 'pending' | 'leased' | 'dispatched' | 'completed';
+  attempts: number;
+  leaseToken?: string | null;
+  leaseExpiresAt?: string | null;
+  payloadJobId?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "answers".
  */
 export interface Answer {
-  id: number
-  submission: number | Submission
-  questionKey: string
-  state: 'answered' | 'skipped'
+  id: number;
+  submission: number | Submission;
+  questionKey: string;
+  state: 'answered' | 'skipped';
   selectedOptionKeys:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  text?: string | null
+    | null;
+  text?: string | null;
   optionText:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "answer-mutations".
  */
 export interface AnswerMutation {
-  id: number
-  submission: number | Submission
-  mutationId: string
-  payloadHash: string
-  resultRevision: number
-  updatedAt: string
-  createdAt: string
+  id: number;
+  submission: number | Submission;
+  mutationId: string;
+  payloadHash: string;
+  resultRevision: number;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "leads".
  */
 export interface Lead {
-  id: number
-  submission: number | Submission
-  scoringRun?: (number | null) | ScoringRun
-  email: string
-  name?: string | null
-  message?: string | null
+  id: number;
+  submission: number | Submission;
+  scoringRun?: (number | null) | ScoringRun;
+  email: string;
+  name?: string | null;
+  message?: string | null;
   /**
    * Pipeline: New → Contacted → In progress → Closed.
    */
-  stage: 'new' | 'contacted' | 'in_progress' | 'closed'
-  notes?: string | null
+  stage: 'new' | 'contacted' | 'in_progress' | 'closed';
+  notes?: string | null;
   stageHistory:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  captureMutationId?: string | null
-  capturePayloadHash?: string | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  captureMutationId?: string | null;
+  capturePayloadHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: number
-  key: string
+  id: number;
+  key: string;
   data:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
+    | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-jobs".
  */
 export interface PayloadJob {
-  id: number
+  id: number;
   /**
    * Input data provided to the job
    */
   input?:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
+    | null;
   taskStatus?:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  completedAt?: string | null
-  totalTried?: number | null
+    | null;
+  completedAt?: string | null;
+  totalTried?: number | null;
   /**
    * If hasError is true this job will not be retried
    */
-  hasError?: boolean | null
+  hasError?: boolean | null;
   /**
    * If hasError is true, this is the error that caused it
    */
   error?:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
+    | null;
   /**
    * Task execution log
    */
   log?:
     | {
-        executedAt: string
-        completedAt: string
+        executedAt: string;
+        completedAt: string;
         taskSlug:
           | 'inline'
           | 'fixture'
@@ -585,39 +566,39 @@ export interface PayloadJob {
           | 'ai-evaluation'
           | 'category-aggregation'
           | 'assessment-narrative'
-          | 'report-email'
-        taskID: string
+          | 'report-email';
+        taskID: string;
         input?:
           | {
-              [k: string]: unknown
+              [k: string]: unknown;
             }
           | unknown[]
           | string
           | number
           | boolean
-          | null
+          | null;
         output?:
           | {
-              [k: string]: unknown
+              [k: string]: unknown;
             }
           | unknown[]
           | string
           | number
           | boolean
-          | null
-        state: 'failed' | 'succeeded'
+          | null;
+        state: 'failed' | 'succeeded';
         error?:
           | {
-              [k: string]: unknown
+              [k: string]: unknown;
             }
           | unknown[]
           | string
           | number
           | boolean
-          | null
-        id?: string | null
+          | null;
+        id?: string | null;
       }[]
-    | null
+    | null;
   taskSlug?:
     | (
         | 'inline'
@@ -628,433 +609,433 @@ export interface PayloadJob {
         | 'assessment-narrative'
         | 'report-email'
       )
-    | null
-  queue?: string | null
-  waitUntil?: string | null
-  processing?: boolean | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  queue?: string | null;
+  waitUntil?: string | null;
+  processing?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: number
+  id: number;
   document?:
     | ({
-        relationTo: 'admins'
-        value: number | Admin
+        relationTo: 'admins';
+        value: number | Admin;
       } | null)
     | ({
-        relationTo: 'anonymous-sessions'
-        value: number | AnonymousSession
+        relationTo: 'anonymous-sessions';
+        value: number | AnonymousSession;
       } | null)
     | ({
-        relationTo: 'questionnaires'
-        value: number | Questionnaire
+        relationTo: 'questionnaires';
+        value: number | Questionnaire;
       } | null)
     | ({
-        relationTo: 'questionnaire-versions'
-        value: number | QuestionnaireVersion
+        relationTo: 'questionnaire-versions';
+        value: number | QuestionnaireVersion;
       } | null)
     | ({
-        relationTo: 'submissions'
-        value: number | Submission
+        relationTo: 'submissions';
+        value: number | Submission;
       } | null)
     | ({
-        relationTo: 'scoring-runs'
-        value: number | ScoringRun
+        relationTo: 'scoring-runs';
+        value: number | ScoringRun;
       } | null)
     | ({
-        relationTo: 'scoring-results'
-        value: number | ScoringResult
+        relationTo: 'scoring-results';
+        value: number | ScoringResult;
       } | null)
     | ({
-        relationTo: 'assessment-outbox'
-        value: number | AssessmentOutbox
+        relationTo: 'assessment-outbox';
+        value: number | AssessmentOutbox;
       } | null)
     | ({
-        relationTo: 'answers'
-        value: number | Answer
+        relationTo: 'answers';
+        value: number | Answer;
       } | null)
     | ({
-        relationTo: 'answer-mutations'
-        value: number | AnswerMutation
+        relationTo: 'answer-mutations';
+        value: number | AnswerMutation;
       } | null)
     | ({
-        relationTo: 'leads'
-        value: number | Lead
-      } | null)
-  globalSlug?: string | null
+        relationTo: 'leads';
+        value: number | Lead;
+      } | null);
+  globalSlug?: string | null;
   user: {
-    relationTo: 'admins'
-    value: number | Admin
-  }
-  updatedAt: string
-  createdAt: string
+    relationTo: 'admins';
+    value: number | Admin;
+  };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: number
+  id: number;
   user: {
-    relationTo: 'admins'
-    value: number | Admin
-  }
-  key?: string | null
+    relationTo: 'admins';
+    value: number | Admin;
+  };
+  key?: string | null;
   value?:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: number
-  name?: string | null
-  batch?: number | null
-  updatedAt: string
-  createdAt: string
+  id: number;
+  name?: string | null;
+  batch?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "admins_select".
  */
 export interface AdminsSelect<T extends boolean = true> {
-  updatedAt?: T
-  createdAt?: T
-  email?: T
-  resetPasswordToken?: T
-  resetPasswordExpiration?: T
-  salt?: T
-  hash?: T
-  loginAttempts?: T
-  lockUntil?: T
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
   sessions?:
     | T
     | {
-        id?: T
-        createdAt?: T
-        expiresAt?: T
-      }
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "anonymous-sessions_select".
  */
 export interface AnonymousSessionsSelect<T extends boolean = true> {
-  tokenHash?: T
-  csrfTokenHash?: T
-  expiresAt?: T
-  lastSeenAt?: T
-  updatedAt?: T
-  createdAt?: T
+  tokenHash?: T;
+  csrfTokenHash?: T;
+  expiresAt?: T;
+  lastSeenAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "questionnaires_select".
  */
 export interface QuestionnairesSelect<T extends boolean = true> {
-  name?: T
-  publicId?: T
-  currentPublishedVersion?: T
-  draftVersion?: T
-  updatedAt?: T
-  createdAt?: T
+  name?: T;
+  publicId?: T;
+  currentPublishedVersion?: T;
+  draftVersion?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "questionnaire-versions_select".
  */
 export interface QuestionnaireVersionsSelect<T extends boolean = true> {
-  questionnaire?: T
-  versionNumber?: T
-  status?: T
+  questionnaire?: T;
+  versionNumber?: T;
+  status?: T;
   categories?:
     | T
     | {
-        key?: T
-        label?: T
-        order?: T
-        scored?: T
-        maxPoints?: T
-        attentionThreshold?: T
-        minimumCoverage?: T
-        id?: T
-      }
+        key?: T;
+        label?: T;
+        order?: T;
+        scored?: T;
+        maxPoints?: T;
+        attentionThreshold?: T;
+        minimumCoverage?: T;
+        id?: T;
+      };
   questions?:
     | T
     | {
-        key?: T
-        number?: T
-        categoryKey?: T
-        prompt?: T
-        type?: T
-        required?: T
-        instructions?: T
-        maxSelections?: T
+        key?: T;
+        number?: T;
+        categoryKey?: T;
+        prompt?: T;
+        type?: T;
+        required?: T;
+        instructions?: T;
+        maxSelections?: T;
         options?:
           | T
           | {
-              key?: T
-              label?: T
-              exclusive?: T
-              requiresText?: T
-              value?: T
-              penalty?: T
-              notApplicable?: T
-              id?: T
-            }
-        scoring?: T
-        id?: T
-      }
-  aiEvaluations?: T
-  definition?: T
-  contentHash?: T
-  publishedAt?: T
-  updatedAt?: T
-  createdAt?: T
+              key?: T;
+              label?: T;
+              exclusive?: T;
+              requiresText?: T;
+              value?: T;
+              penalty?: T;
+              notApplicable?: T;
+              id?: T;
+            };
+        scoring?: T;
+        id?: T;
+      };
+  aiEvaluations?: T;
+  definition?: T;
+  contentHash?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "submissions_select".
  */
 export interface SubmissionsSelect<T extends boolean = true> {
-  externalId?: T
-  session?: T
-  questionnaireVersion?: T
-  state?: T
-  revision?: T
-  currentStep?: T
-  submittedSnapshot?: T
-  submittedSnapshotHash?: T
-  submitMutationId?: T
-  submitPayloadHash?: T
-  updatedAt?: T
-  createdAt?: T
+  externalId?: T;
+  session?: T;
+  questionnaireVersion?: T;
+  state?: T;
+  revision?: T;
+  currentStep?: T;
+  submittedSnapshot?: T;
+  submittedSnapshotHash?: T;
+  submitMutationId?: T;
+  submitPayloadHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "scoring-runs_select".
  */
 export interface ScoringRunsSelect<T extends boolean = true> {
-  submission?: T
-  questionnaireVersion?: T
-  runNumber?: T
-  state?: T
-  answerSnapshot?: T
-  answerSnapshotHash?: T
-  definitionSnapshot?: T
-  engineVersion?: T
-  report?: T
-  updatedAt?: T
-  createdAt?: T
+  submission?: T;
+  questionnaireVersion?: T;
+  runNumber?: T;
+  state?: T;
+  answerSnapshot?: T;
+  answerSnapshotHash?: T;
+  definitionSnapshot?: T;
+  engineVersion?: T;
+  report?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "scoring-results_select".
  */
 export interface ScoringResultsSelect<T extends boolean = true> {
-  scoringRun?: T
-  categoryKey?: T
-  normalized?: T
-  points?: T
-  coverage?: T
-  eligible?: T
-  components?: T
-  updatedAt?: T
-  createdAt?: T
+  scoringRun?: T;
+  categoryKey?: T;
+  normalized?: T;
+  points?: T;
+  coverage?: T;
+  eligible?: T;
+  components?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "assessment-outbox_select".
  */
 export interface AssessmentOutboxSelect<T extends boolean = true> {
-  workKey?: T
-  type?: T
-  payload?: T
-  state?: T
-  attempts?: T
-  leaseToken?: T
-  leaseExpiresAt?: T
-  payloadJobId?: T
-  updatedAt?: T
-  createdAt?: T
+  workKey?: T;
+  type?: T;
+  payload?: T;
+  state?: T;
+  attempts?: T;
+  leaseToken?: T;
+  leaseExpiresAt?: T;
+  payloadJobId?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "answers_select".
  */
 export interface AnswersSelect<T extends boolean = true> {
-  submission?: T
-  questionKey?: T
-  state?: T
-  selectedOptionKeys?: T
-  text?: T
-  optionText?: T
-  updatedAt?: T
-  createdAt?: T
+  submission?: T;
+  questionKey?: T;
+  state?: T;
+  selectedOptionKeys?: T;
+  text?: T;
+  optionText?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "answer-mutations_select".
  */
 export interface AnswerMutationsSelect<T extends boolean = true> {
-  submission?: T
-  mutationId?: T
-  payloadHash?: T
-  resultRevision?: T
-  updatedAt?: T
-  createdAt?: T
+  submission?: T;
+  mutationId?: T;
+  payloadHash?: T;
+  resultRevision?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "leads_select".
  */
 export interface LeadsSelect<T extends boolean = true> {
-  submission?: T
-  scoringRun?: T
-  email?: T
-  name?: T
-  message?: T
-  stage?: T
-  notes?: T
-  stageHistory?: T
-  captureMutationId?: T
-  capturePayloadHash?: T
-  updatedAt?: T
-  createdAt?: T
+  submission?: T;
+  scoringRun?: T;
+  email?: T;
+  name?: T;
+  message?: T;
+  stage?: T;
+  notes?: T;
+  stageHistory?: T;
+  captureMutationId?: T;
+  capturePayloadHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
-  key?: T
-  data?: T
+  key?: T;
+  data?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-jobs_select".
  */
 export interface PayloadJobsSelect<T extends boolean = true> {
-  input?: T
-  taskStatus?: T
-  completedAt?: T
-  totalTried?: T
-  hasError?: T
-  error?: T
+  input?: T;
+  taskStatus?: T;
+  completedAt?: T;
+  totalTried?: T;
+  hasError?: T;
+  error?: T;
   log?:
     | T
     | {
-        executedAt?: T
-        completedAt?: T
-        taskSlug?: T
-        taskID?: T
-        input?: T
-        output?: T
-        state?: T
-        error?: T
-        id?: T
-      }
-  taskSlug?: T
-  queue?: T
-  waitUntil?: T
-  processing?: T
-  updatedAt?: T
-  createdAt?: T
+        executedAt?: T;
+        completedAt?: T;
+        taskSlug?: T;
+        taskID?: T;
+        input?: T;
+        output?: T;
+        state?: T;
+        error?: T;
+        id?: T;
+      };
+  taskSlug?: T;
+  queue?: T;
+  waitUntil?: T;
+  processing?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents_select".
  */
 export interface PayloadLockedDocumentsSelect<T extends boolean = true> {
-  document?: T
-  globalSlug?: T
-  user?: T
-  updatedAt?: T
-  createdAt?: T
+  document?: T;
+  globalSlug?: T;
+  user?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-preferences_select".
  */
 export interface PayloadPreferencesSelect<T extends boolean = true> {
-  user?: T
-  key?: T
-  value?: T
-  updatedAt?: T
-  createdAt?: T
+  user?: T;
+  key?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-migrations_select".
  */
 export interface PayloadMigrationsSelect<T extends boolean = true> {
-  name?: T
-  batch?: T
-  updatedAt?: T
-  createdAt?: T
+  name?: T;
+  batch?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "landing-page".
  */
 export interface LandingPage {
-  id: number
-  pageTitle: string
-  metaDescription: string
-  headline: string
-  supporting: string
-  audienceTitle: string
-  audience: string
+  id: number;
+  pageTitle: string;
+  metaDescription: string;
+  headline: string;
+  supporting: string;
+  audienceTitle: string;
+  audience: string;
   steps?:
     | {
-        title: string
-        text: string
-        id?: string | null
+        title: string;
+        text: string;
+        id?: string | null;
       }[]
-    | null
-  buttonLabel: string
-  questionnaire: number | Questionnaire
-  updatedAt?: string | null
-  createdAt?: string | null
+    | null;
+  buttonLabel: string;
+  questionnaire: number | Questionnaire;
+  updatedAt?: string | null;
+  createdAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "landing-page_select".
  */
 export interface LandingPageSelect<T extends boolean = true> {
-  pageTitle?: T
-  metaDescription?: T
-  headline?: T
-  supporting?: T
-  audienceTitle?: T
-  audience?: T
+  pageTitle?: T;
+  metaDescription?: T;
+  headline?: T;
+  supporting?: T;
+  audienceTitle?: T;
+  audience?: T;
   steps?:
     | T
     | {
-        title?: T
-        text?: T
-        id?: T
-      }
-  buttonLabel?: T
-  questionnaire?: T
-  updatedAt?: T
-  createdAt?: T
-  globalType?: T
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  buttonLabel?: T;
+  questionnaire?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1062,9 +1043,9 @@ export interface LandingPageSelect<T extends boolean = true> {
  */
 export interface CollectionsWidget {
   data?: {
-    [k: string]: unknown
-  }
-  width: 'full'
+    [k: string]: unknown;
+  };
+  width: 'full';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1072,12 +1053,12 @@ export interface CollectionsWidget {
  */
 export interface TaskFixture {
   input: {
-    marker: string
-  }
+    marker: string;
+  };
   output: {
-    marker: string
-    workerPid: number
-  }
+    marker: string;
+    workerPid: number;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1085,12 +1066,12 @@ export interface TaskFixture {
  */
 export interface TaskDeterministicScore {
   input: {
-    outboxID: number
-    runID: number
-  }
+    outboxID: number;
+    runID: number;
+  };
   output: {
-    runID: number
-  }
+    runID: number;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1098,12 +1079,12 @@ export interface TaskDeterministicScore {
  */
 export interface TaskAiEvaluation {
   input: {
-    outboxID: number
-    runID: number
-  }
+    outboxID: number;
+    runID: number;
+  };
   output: {
-    runID: number
-  }
+    runID: number;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1111,12 +1092,12 @@ export interface TaskAiEvaluation {
  */
 export interface TaskCategoryAggregation {
   input: {
-    outboxID: number
-    runID: number
-  }
+    outboxID: number;
+    runID: number;
+  };
   output: {
-    runID: number
-  }
+    runID: number;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1124,12 +1105,12 @@ export interface TaskCategoryAggregation {
  */
 export interface TaskAssessmentNarrative {
   input: {
-    outboxID: number
-    runID: number
-  }
+    outboxID: number;
+    runID: number;
+  };
   output: {
-    runID: number
-  }
+    runID: number;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1137,20 +1118,21 @@ export interface TaskAssessmentNarrative {
  */
 export interface TaskReportEmail {
   input: {
-    deliveryID: number
-    outboxID: number
-  }
+    deliveryID: number;
+    outboxID: number;
+  };
   output: {
-    deliveryID: number
-  }
+    deliveryID: number;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "auth".
  */
 export interface Auth {
-  [k: string]: unknown
+  [k: string]: unknown;
 }
+
 
 declare module 'payload' {
   export interface GeneratedTypes extends Config {}
