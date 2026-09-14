@@ -1,7 +1,7 @@
 import type { GeminiProvider } from './gemini'
 import type { NarrativeProvider } from './narrative'
 
-type ProviderScenario = 'complete' | 'clarification'
+type ProviderScenario = 'complete' | 'clarification' | 'terminal_failure'
 
 const scenario = (): ProviderScenario | null => {
   if (
@@ -13,7 +13,9 @@ const scenario = (): ProviderScenario | null => {
 
   const value = process.env.ASSESSMENT_TEST_PROVIDER_SCENARIO
 
-  return value === 'complete' || value === 'clarification' ? value : null
+  return value === 'complete' || value === 'clarification' || value === 'terminal_failure'
+    ? value
+    : null
 }
 
 export const createTestGeminiProvider = (): GeminiProvider | null => {
@@ -47,6 +49,10 @@ export const createTestGeminiProvider = (): GeminiProvider | null => {
           evidence: [{ questionKey: evidence.questionKey, excerpt: evidence.answer }],
           followUpQuestion: 'What changed after you tried to improve this?',
         }
+      }
+
+      if (selectedScenario === 'terminal_failure') {
+        throw new Error('Fixture transport temporarily unavailable')
       }
 
       return {

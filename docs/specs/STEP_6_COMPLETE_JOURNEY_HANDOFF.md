@@ -1,6 +1,8 @@
 # Step 6: One complete assessment journey — implementation handoff
 
-Prepared: 2026-09-13. Status: plan only. No implementation or test execution was performed by the planning session for this step.
+Prepared: 2026-09-13. Reconciled: 2026-09-14. Status: partially verified. The local saved-answer → deterministic/pending report → admin-linked contact journey is recorded as exercised. Full provider-controlled automated completion, clarification, and the remaining regression evidence are outstanding; Step 6 remains active.
+
+This reconciliation reviews existing repository records and test coverage. It does not represent a fresh runtime or remote CI execution. The later verification entries in [V1 scope](V1_SCOPE.md#preview-and-initial-launch-verification) supersede older pending statements in the Step 5 execution record where they describe the same check.
 
 ## 1. Objective
 
@@ -19,7 +21,7 @@ Much of this code already exists. Inspect, integrate, test, and fix concrete gap
 ## 2. Instructions and prerequisites
 
 - Read `general.md`, `AGENTS.md`, `typescript-react-guidelines.md`, and relevant installed Next.js documentation before implementation.
-- Read [Step 5 foundations](STEP_5_FOUNDATIONS_HANDOFF.md), [backend design](STEP_4_BACKEND_DESIGN.md), [V1 scope](V1_SCOPE.md), [scoring reference](../SCORING_REFERENCE.md), and [AI rubric](AI_RUBRIC_INITIAL.md).
+- Read [Step 5 foundations](done/STEP_5_FOUNDATIONS_HANDOFF.md), [backend design](done/STEP_4_BACKEND_DESIGN.md), [V1 scope](V1_SCOPE.md), [scoring reference](../SCORING_REFERENCE.md), and [AI rubric](AI_RUBRIC_INITIAL.md).
 - Inspect branch/status and current verification records. At planning time, Step 5 files have uncommitted changes. Do not revert/stage those as your own or assume Step 5 is complete merely because this brief exists.
 - Prerequisites: isolated migrated/seeded PostgreSQL, protected admin, runnable web and separate worker, valid environment, stable published questionnaire UUID, and a usable preview. Resolve only prerequisite blockers needed for this journey; record larger foundation gaps in Step 5.
 - Use the repository's bounded task workflow and Ralph if available. If unavailable, document that and follow bounded implement/check/fix cycles directly. Reassess repeated failures rather than silently expanding scope.
@@ -37,7 +39,7 @@ Existing entry points include:
 - Payload collections, migrations, seed/bootstrap scripts, `scripts/worker.ts`.
 - `tests/assessmentSessions.integration.test.ts`, provider/service unit tests, and `tests/journeys.spec.ts`.
 
-At planning time the browser suite contains two smoke tests: public-page/accessibility/noindex checks and private/invalid-route checks. It does **not** exercise a complete questionnaire, worker-generated report, or persisted contact lead. Existing unit tests cannot substitute for that journey.
+Current browser coverage includes two smoke tests in `tests/journeys.spec.ts` and an opt-in 16-question flow in `tests/previewJourney.spec.ts`, enabled with `RUN_PREVIEW_JOURNEY=true`. The latter exercises reload/resume, review/submit, optional notification, and contact UI. It does not independently assert persisted scores, run/version/lead linkage, admin stage/note edits, or provider-driven completion. Its notification assertion accepts either a saved request or an error message, so passing that test alone does not prove successful notification persistence. The recorded CI run passed the two smoke tests and skipped the opt-in journey. Existing unit tests cannot substitute for the complete journey.
 
 Check actual DTOs/routes before writing tests; design documents may describe intended interfaces that differ from the final implementation. Correct drift deliberately and update documentation rather than silently accepting broken product requirements.
 
@@ -192,17 +194,30 @@ If live credentials or external preview access are missing, report **automated i
 
 | Item | Result |
 | --- | --- |
-| Branch/revision and preserved work | Pending |
-| Step 5 prerequisites verified | Pending |
-| Test questionnaire UUID/version and fixture case | Pending |
-| Unit/integration/E2E counts and commands | Pending |
-| Web/worker/DB image/process setup | Pending |
-| Run/report/lead linkage evidence | Pending |
-| Mobile/desktop/accessibility results | Pending |
-| Version, ownership, duplicate, restart checks | Pending |
-| Provider-stub vs live Gemini evidence | Pending |
-| Notification/email scope verified or deferred | Pending |
-| Preview endpoint/access and results | Pending |
-| Open issues and Step 7 task list | Pending |
+| Branch/revision and preserved work | Reconciled against repository records at `2891209`; the historical CI record names `master`. The runtime evidence does not record an exact journey source revision. Existing moves of Steps 3–5 into `done/` are preserved. |
+| Step 5 prerequisites verified | The 2026-09-14 records report Docker 29.7.2, PostgreSQL 16.11, 12 migrations, repeat-safe seed, first-admin bootstrap with overwrite refusal, and healthy web/worker. Backup restored into a separate verification database with matching recorded counts. Older Step 5 pending browser/CI entries are superseded by V1 scope's later entries. |
+| Test questionnaire UUID/version and fixture case | `tests/completeJourney.integration.test.ts` creates and publishes an isolated 16-question copy of the foundation definition, then saves all 16 fictional answers. It asserts the submitted snapshot, the exact published version ID, and the created run ID. |
+| Unit/integration/E2E counts and commands | On 2026-09-14, `npm run typecheck` passed. The provider-controlled complete journey passed alone (1 passed, 1 skipped; 15.1s), and the clarification journey passed alone (1 passed, 1 skipped; 18.7s). The whole integration suite, unit suite, build, and browser journey were not rerun after this change. |
+| Web/worker/DB image/process setup | Recorded image `workflow-health-check:preview-local-20260914`, digest `sha256:cab162443ba912e074431d68498c735d731d98317b57adc24bac943312b2b822`; separate migration, web, and worker roles in `workflow-health-preview`. No live provider credentials supplied in the recorded run. |
+| Run/report/lead linkage evidence | The complete-journey test proves the submitted 16-answer snapshot becomes one persisted report through six fresh `worker --once` processes. It asserts project 0/0, people 1/22 normalized, admin 0.05/1, and friction 0.25/5; report evidence cites the submitted Q11 text. Duplicate contact requests create one linked New lead with the exact run ID; its contacted stage and note persist through Payload. |
+| Mobile/desktop/accessibility results | Recorded 390px mobile landing/form accessibility and overflow smoke checks passed, plus questionnaire noindex and private-route checks. Complete desktop/mobile journey, keyboard, clarification, results, and contact accessibility evidence remains outstanding. |
+| Version, ownership, duplicate, restart checks | Existing integration tests cover private access, stale/duplicate answer writes, and duplicate submit. The complete journey executes every outbox stage in a fresh process, and the clarification test rejects a second response while recording exactly two evaluation attempts. The J6 fixture also reclaims an expired deterministic-score lease in a new worker process. Publication version pinning across a content change and review-edit snapshot proof remain pending. |
+| Provider-stub vs live Gemini evidence | Test-only Gemini and narrative transports require both `NODE_ENV=test` and `RUN_INTEGRATION_TESTS=true`; no HTTP input can enable them. The passing complete scenario validates grounded AI output and narrative persistence; the clarification scenario persists one prompt/response then completes. Terminal provider failure retries three times and persists a usable partial report without leaving work queued. Live Gemini remains pending. |
+| Notification/email scope verified or deferred | Request acceptance is recorded locally. Report-ready transport capture, grant journey, and live Resend sender/inbox delivery are not verified. No actual email delivery is claimed. |
+| Preview endpoint/access and results | Local Compose preview `https://localhost`; disposable-only certificate override used for browser checks. External protected preview remains unverified. |
+| Open issues and Step 7 task list | Finish the Step 6 provider-controlled complete journey and regression evidence below. Step 7 follow-up: report-ready email delivery and private-link recovery, including configured live sender/recipient validation and any unresolved delayed-clarification behavior. |
+
+### Remaining Step 6 acceptance work
+
+- [x] J1/J3: exact submitted snapshot and publication/run linkage are covered; CMS publish/version pinning across a content change, review correction, and acknowledged-save retry remain.
+- [x] J2/J4: test-only provider transport drives the real API, PostgreSQL outbox, and separate worker through full report persistence; the complete and one-clarification cases assert grounded output and known scores.
+- [x] J5: duplicate contact capture creates one lead linked to the run; lead stage and notes persist. Separate authenticated-admin browser evidence remains with J7.
+- [x] J6: expired-lease recovery and three terminal provider retries are covered. Terminal failure completes with a usable partial report instead of leaving the assessment pending.
+- [ ] J7: run the complete required journey on desktop/mobile with keyboard/accessibility checks and no skipped required scenarios; the existing two CI smoke tests do not close this item.
+- [ ] J8: perform the bounded live Gemini check when authorized/configured; record model, usage, and run evidence or retain an explicit pending status.
+- [ ] J9: prove notification-request separation from leads and capture report-ready transport behavior; retain live inbox delivery as a Step 7 follow-up.
+- [ ] J10: consolidate verification artifacts, exact revisions and counts; close Step 6 only when its required acceptance is satisfied.
+
+Next bounded task: J1/J3, publish a harmless version change and prove a pre-existing submission remains pinned to its original version after a review edit. Missing live keys do not block this automated internal work.
 
 The implementing model's final response should state what changed, what ran and passed, what remains pending, and the next bounded feature task. A successful build or a screenshot of a report is not sufficient evidence for this step.

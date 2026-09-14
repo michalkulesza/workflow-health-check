@@ -1,6 +1,6 @@
 import type { Payload, TaskConfig } from 'payload'
 
-import { answerValueSchema } from '@/lib/assessment/contracts'
+import { answerValueSchema, reportSchema } from '@/lib/assessment/contracts'
 import { createGeminiProvider, type GeminiProvider } from '@/server/ai/gemini'
 import {
   type QuestionnaireDefinition,
@@ -33,6 +33,8 @@ const validateEvidence = (
   evidence.every(({ questionKey, excerpt }) =>
     permitted.get(questionKey)?.includes(excerpt)
   )
+
+const MAX_PROVIDER_ATTEMPTS = 3
 
 export const runAIEvaluation = async ({
   outboxID,
@@ -118,7 +120,7 @@ export const runAIEvaluation = async ({
         )
       }
 
-      const output = await provider.evaluate({
+      const providerRequest = {
         model: evaluation.model,
         promptVersion: evaluation.promptVersion,
         rubricVersion: evaluation.rubricVersion,
@@ -128,7 +130,56 @@ export const runAIEvaluation = async ({
           answer,
           prompt: questions.get(questionKey)?.prompt ?? questionKey,
         })),
-      })
+      }
+      let output
+
+      try {
+        for (let attempt = 1; attempt <= MAX_PROVIDER_ATTEMPTS; attempt += 1) {
+          try {
+            output = await provider.evaluate(providerRequest)
+            break
+          } catch (error) {
+            if (attempt === MAX_PROVIDER_ATTEMPTS) {
+              throw error
+            }
+          }
+        }
+      } catch {
+        const report = reportSchema.parse({
+          status: 'partial',
+          analysisComplete: false,
+          priorities: [],
+          summary:
+            'Your rule-based workflow results are ready, but reflection-based analysis is currently unavailable.',
+          pendingCategories: [evaluation.categoryKey],
+        })
+
+        await client.query(
+          `INSERT INTO scoring_ai_evaluations (scoring_run_id, evaluation_key, state, output, clarification_prompt, attempts, updated_at, created_at)
+           VALUES ($1, $2, 'pending', NULL, NULL, $3, now(), now())
+           ON CONFLICT (scoring_run_id, evaluation_key) DO UPDATE SET attempts = scoring_ai_evaluations.attempts + $3, updated_at = now()`,
+          [runID, evaluation.key, MAX_PROVIDER_ATTEMPTS]
+        )
+        await client.query(
+          `UPDATE scoring_runs SET state = 'partial', report = $2::jsonb, updated_at = now() WHERE id = $1`,
+          [runID, JSON.stringify(report)]
+        )
+        await client.query(
+          `UPDATE submissions SET state = 'partial', updated_at = now()
+            WHERE id = (SELECT submission_id FROM scoring_runs WHERE id = $1)`,
+          [runID]
+        )
+        await client.query(
+          `UPDATE assessment_outbox SET state = 'completed', updated_at = now() WHERE id = $1`,
+          [outboxID]
+        )
+
+        return
+      }
+
+      if (!output) {
+        throw new Error('Provider retry loop completed without an output')
+      }
 
       if (!validateEvidence(output.evidence, permitted)) {
         throw new Error(
@@ -204,7 +255,7 @@ export const aiEvaluationTask: TaskConfig<{
     { name: 'runID', type: 'number', required: true },
   ],
   outputSchema: [{ name: 'runID', type: 'number', required: true }],
-  retries: 2,
+  retries: 0,
   handler: async ({ input, req }) => {
     await runAIEvaluation({ ...input, payload: req.payload })
 

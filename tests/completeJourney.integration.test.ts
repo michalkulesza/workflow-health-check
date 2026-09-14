@@ -421,4 +421,46 @@ describe('complete 16-question assessment journey', () => {
       state: 'complete',
     })
   })
+
+  it('reclaims expired work after a worker restart and records terminal provider retries', async () => {
+    process.env.ASSESSMENT_TEST_PROVIDER_SCENARIO = 'terminal_failure'
+    const journey = await createJourney()
+    const revision = await saveAllAnswers(journey)
+    const submitted = await submitJourney(journey, revision)
+
+    await payload.db.pool.query(
+      `UPDATE assessment_outbox
+          SET state = 'leased', lease_token = 'interrupted-worker',
+              lease_expires_at = now() - interval '1 second'
+        WHERE type = 'deterministic_score' AND payload->>'runID' = $1`,
+      [submitted.runId]
+    )
+
+    await completeWorkerRun()
+
+    const recovery = await payload.db.pool.query<{
+      attempts: string
+      has_error: boolean
+      report: { status: string }
+      state: string
+      total_tried: string
+    }>(
+      `SELECT outbox.attempts, job.total_tried, job.has_error, run.state, run.report
+         FROM assessment_outbox outbox
+         JOIN payload_jobs job ON job.id = outbox.payload_job_id
+         JOIN scoring_runs run ON run.id = (outbox.payload->>'runID')::integer
+        WHERE outbox.type = 'ai_evaluation' AND run.id = $1`,
+      [submitted.runId]
+    )
+
+    expect(recovery.rows).toEqual([
+      expect.objectContaining({
+        attempts: '1',
+        has_error: false,
+        report: expect.objectContaining({ status: 'partial' }),
+        state: 'partial',
+        total_tried: '1',
+      }),
+    ])
+  })
 })
