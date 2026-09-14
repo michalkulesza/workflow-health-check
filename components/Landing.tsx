@@ -45,6 +45,7 @@ export const Landing = () => {
   if (!landing) {
     return (
       <main className="narrow center" aria-live="polite">
+        <h1>Workflow health check</h1>
         <p>Loading assessment…</p>
       </main>
     )
