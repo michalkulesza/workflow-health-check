@@ -1,5 +1,6 @@
 import type { Payload } from 'payload'
 
+import { isAllowedAssessmentOrigin } from './origin'
 import { getAnonymousSession, isValidCsrfToken } from './session'
 
 const cookieValue = (request: Request, name: string): string | undefined =>
@@ -20,7 +21,7 @@ export const isAuthorizedWrite = ({
   request: Request
   csrfTokenHash: string
 }): boolean =>
-  request.headers.get('origin') === new URL(request.url).origin &&
+  isAllowedAssessmentOrigin(request) &&
   isValidCsrfToken({
     expectedHash: csrfTokenHash,
     token: request.headers.get('x-assessment-csrf') ?? undefined,

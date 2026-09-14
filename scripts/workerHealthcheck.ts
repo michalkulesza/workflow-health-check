@@ -13,7 +13,9 @@ const main = async () => {
   }
 }
 
-main().catch(() => {
-  console.error('Worker is not ready.')
-  process.exitCode = 1
-})
+main()
+  .then(() => process.exit(0))
+  .catch(() => {
+    console.error('Worker is not ready.')
+    process.exit(1)
+  })

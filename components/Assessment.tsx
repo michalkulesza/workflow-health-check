@@ -100,7 +100,9 @@ export const Assessment = ({
           setScreen(
             resumed.state === 'awaiting_clarification'
               ? 'clarification'
-              : 'question'
+              : resumed.state === 'in_progress'
+                ? 'question'
+                : 'processing'
           )
         } else {
           setSubmission(
@@ -131,7 +133,9 @@ export const Assessment = ({
   useEffect(() => {
     if (
       !submission ||
-      !['submitted', 'processing'].includes(submission.state)
+      !['submitted', 'processing', 'ready', 'partial', 'failed'].includes(
+        submission.state
+      )
     ) {
       return
     }

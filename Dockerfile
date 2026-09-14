@@ -10,7 +10,11 @@ FROM dependencies AS build
 COPY . .
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 ENV PAYLOAD_SECRET=build-only-secret-that-is-at-least-32-characters
-RUN npm run build
+# Windows-hosted agent guidance is symlinked outside Docker's build context.
+# Next inspects these paths during its build, but they are not runtime inputs.
+RUN rm -f general.md typescript-react-guidelines.md \
+  && touch general.md typescript-react-guidelines.md \
+  && npm run build
 
 FROM base AS runtime
 WORKDIR /app

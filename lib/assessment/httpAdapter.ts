@@ -45,7 +45,7 @@ export class HttpAssessmentAdapter implements AssessmentAdapter {
 
   constructor({
     basePath = '/api/assessment/v1',
-    fetcher = fetch,
+    fetcher = (...args) => fetch(...args),
   }: {
     basePath?: string
     fetcher?: Fetcher

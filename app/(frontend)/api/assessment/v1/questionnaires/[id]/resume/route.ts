@@ -21,7 +21,19 @@ export const GET = async (request: Request, { params }: Props) => {
     where: {
       and: [
         { session: { equals: session.id } },
-        { state: { in: ['in_progress', 'awaiting_clarification'] } },
+        {
+          state: {
+            in: [
+              'in_progress',
+              'submitted',
+              'processing',
+              'awaiting_clarification',
+              'ready',
+              'partial',
+              'failed',
+            ],
+          },
+        },
       ],
     },
     sort: '-updatedAt',
@@ -36,9 +48,13 @@ export const GET = async (request: Request, { params }: Props) => {
     )
   )
 
-  const submission = candidates.find(
+  const questionnaireCandidates = candidates.filter(
     (candidate) => candidate.questionnaireId === id
   )
+  const submission =
+    questionnaireCandidates.find(
+      (candidate) => candidate.state !== 'in_progress'
+    ) ?? questionnaireCandidates[0]
 
   if (!submission) {
     return Response.json(null, { headers: { 'Cache-Control': 'no-store' } })

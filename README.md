@@ -48,7 +48,11 @@ $env:E2E_BASE_URL='https://preview.example.com'
 npm.cmd run test:e2e
 ```
 
+For a local Compose preview using its self-signed TLS certificate, additionally set `$env:E2E_IGNORE_HTTPS_ERRORS='true'`. This opt-in is only for a disposable local preview; leave it unset when validating an external preview so certificate errors fail the run.
+
 For a production-build local check, run `npm run build`, then set `E2E_LOCAL_PREVIEW=true` and `E2E_QUESTIONNAIRE_ID` before `npm run test:e2e`. Playwright uses its managed Chromium on Windows and Linux. Set `E2E_BROWSER_EXECUTABLE` only to opt into a local Edge/other browser. Missing browser target or questionnaire configuration fails instead of skipping the suite.
+
+To exercise the data-writing journey only on a disposable preview, additionally set `RUN_PREVIEW_JOURNEY=true`. It saves and resumes a fictional questionnaire response, submits it to the running worker, uses `preview-notification@example.test` only when the report is pending, and creates a fictional contact lead. Do not set it for a shared or production preview.
 
 ## Production-style Compose preview
 

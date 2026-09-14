@@ -40,10 +40,12 @@ const main = async () => {
   }
 }
 
-main().catch(() => {
-  console.error(
-    'Worker failed. Check database connectivity and server configuration.'
-  )
+main()
+  .then(() => process.exit(0))
+  .catch(() => {
+    console.error(
+      'Worker failed. Check database connectivity and server configuration.'
+    )
 
-  process.exitCode = 1
-})
+    process.exit(1)
+  })

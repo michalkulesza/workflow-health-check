@@ -6,12 +6,11 @@ import { getPayload } from 'payload'
 import { createSubmissionInputSchema } from '@/lib/assessment/contracts'
 import config from '@/payload.config'
 import { assessmentError } from '@/server/assessment/response'
+import { isAllowedAssessmentOrigin } from '@/server/assessment/origin'
 import { getAnonymousSession } from '@/server/assessment/session'
 
 export const POST = async (request: Request) => {
-  const origin = request.headers.get('origin')
-
-  if (origin !== new URL(request.url).origin) {
+  if (!isAllowedAssessmentOrigin(request)) {
     return assessmentError('unauthorized', 'Invalid request origin', 403)
   }
 

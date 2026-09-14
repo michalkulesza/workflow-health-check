@@ -39,14 +39,16 @@ const main = async () => {
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(
-    'Admin bootstrap failed. Check credentials, existing admin, and database configuration.'
-  )
+main()
+  .then(() => process.exit(0))
+  .catch((error: unknown) => {
+    console.error(
+      'Admin bootstrap failed. Check credentials, existing admin, and database configuration.'
+    )
 
-  if (error instanceof Error) {
-    console.error(error.message)
-  }
+    if (error instanceof Error) {
+      console.error(error.message)
+    }
 
-  process.exitCode = 1
-})
+    process.exit(1)
+  })

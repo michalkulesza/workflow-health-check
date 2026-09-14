@@ -2,6 +2,7 @@ import { defineConfig } from '@playwright/test'
 
 const localPreview = process.env.E2E_LOCAL_PREVIEW === 'true'
 const externalBaseUrl = process.env.E2E_BASE_URL
+const ignoreHTTPSErrors = process.env.E2E_IGNORE_HTTPS_ERRORS === 'true'
 
 if (!externalBaseUrl && !localPreview) {
   throw new Error(
@@ -22,6 +23,7 @@ export default defineConfig({
   use: {
     baseURL,
     headless: true,
+    ignoreHTTPSErrors,
     trace: 'retain-on-failure',
     browserName: 'chromium',
     launchOptions: process.env.E2E_BROWSER_EXECUTABLE

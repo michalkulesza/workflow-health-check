@@ -68,9 +68,7 @@ export const captureLead = async ({
   )
   const lead = existing.rows[0]
 
-  return lead &&
-    lead.capture_mutation_id === input.idempotencyKey &&
-    lead.capture_payload_hash === payloadHash
+  return lead && lead.capture_payload_hash === payloadHash
     ? { accepted: true }
     : { mismatch: true }
 }

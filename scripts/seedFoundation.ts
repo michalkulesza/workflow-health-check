@@ -33,7 +33,10 @@ const definition = questionnaireDefinitionSchema.parse({
       label: option.label,
       exclusive: option.exclusive ?? false,
       requiresText: option.requiresText ?? false,
-      value: option.value ?? null,
+      value:
+        question.strategy === 'multi_select_weighted'
+          ? null
+          : (option.value ?? null),
       penalty: question.id === 'q8' ? (option.value ?? null) : null,
       notApplicable: option.notApplicable ?? false,
     })),
@@ -158,7 +161,7 @@ const main = async () => {
         overrideAccess: true,
       })
 
-      await payload.update({
+      questionnaire = await payload.update({
         collection: 'questionnaires',
         id: questionnaire.id,
         data: { draftVersion: version.id },
@@ -253,12 +256,14 @@ const main = async () => {
   }
 }
 
-main().catch((error: unknown) => {
-  console.error('Foundation seed failed.')
+main()
+  .then(() => process.exit(0))
+  .catch((error: unknown) => {
+    console.error('Foundation seed failed.')
 
-  if (error instanceof Error) {
-    console.error(error.message)
-  }
+    if (error instanceof Error) {
+      console.error(error.message)
+    }
 
-  process.exitCode = 1
-})
+    process.exit(1)
+  })

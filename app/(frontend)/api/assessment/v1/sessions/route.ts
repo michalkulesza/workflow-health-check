@@ -5,17 +5,19 @@ import config from '@/payload.config'
 import {
   createAnonymousSession,
   csrfCookieName,
+  getAnonymousSession,
+  isValidCsrfToken,
   sessionCookieName,
 } from '@/server/assessment/session'
+import { isAllowedAssessmentOrigin } from '@/server/assessment/origin'
 
-const isSameOrigin = (request: Request): boolean => {
-  const origin = request.headers.get('origin')
-
-  return origin === new URL(request.url).origin
-}
+const cookieValue = (request: Request, name: string): string | undefined =>
+  request.headers
+    .get('cookie')
+    ?.match(new RegExp(`(?:^|; )${name}=([^;]+)`))?.[1]
 
 export const POST = async (request: Request) => {
-  if (!isSameOrigin(request)) {
+  if (!isAllowedAssessmentOrigin(request)) {
     return NextResponse.json(
       { error: { code: 'unauthorized', message: 'Invalid request origin' } },
       { status: 403 }
@@ -23,6 +25,25 @@ export const POST = async (request: Request) => {
   }
 
   const payload = await getPayload({ config })
+  const existingSession = await getAnonymousSession({
+    payload,
+    sessionToken: cookieValue(request, sessionCookieName),
+  })
+  const csrfToken = cookieValue(request, csrfCookieName)
+
+  if (
+    existingSession &&
+    isValidCsrfToken({
+      expectedHash: existingSession.csrfTokenHash,
+      token: csrfToken,
+    })
+  ) {
+    return NextResponse.json(
+      { csrfToken, expiresAt: existingSession.expiresAt },
+      { headers: { 'Cache-Control': 'no-store' } }
+    )
+  }
+
   const session = await createAnonymousSession(payload)
 
   const response = NextResponse.json(
