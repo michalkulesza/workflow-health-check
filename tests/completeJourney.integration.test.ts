@@ -7,6 +7,7 @@ import { getPayload, type Payload } from 'payload'
 
 import { createFoundationDefinition } from '@/server/content/foundationDefinition'
 import { publishQuestionnaire } from '@/server/content/publishQuestionnaire'
+import { runReportEmail } from '@/server/jobs/reportEmailTask'
 
 const ORIGIN = 'http://assessment.test'
 const fixtureText =
@@ -217,7 +218,9 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await payload.destroy()
+  if (payload) {
+    await payload.destroy()
+  }
 })
 
 describe('complete 16-question assessment journey', () => {
@@ -420,6 +423,151 @@ describe('complete 16-question assessment journey', () => {
       clarification_response: 'I now record approvals in one shared project tracker.',
       state: 'complete',
     })
+  })
+
+  it('keeps a report notification separate from leads and captures one report-ready delivery', async () => {
+    process.env.ASSESSMENT_TEST_PROVIDER_SCENARIO = 'complete'
+    const journey = await createJourney()
+    const revision = await saveAllAnswers(journey)
+    await submitJourney(journey, revision)
+
+    const { POST: requestNotification } =
+      await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/notification/route')
+    const response = await requestNotification(
+      request(
+        `/api/assessment/v1/submissions/${journey.submissionID}/notification`,
+        {
+          body: JSON.stringify({
+            email: 'notification-only@example.test',
+            purpose: 'report_ready',
+            submissionId: journey.submissionID,
+          }),
+          headers: {
+            cookie: journey.session.cookie,
+            origin: ORIGIN,
+            'x-assessment-csrf': journey.session.csrfToken,
+          },
+          method: 'POST',
+        }
+      ),
+      routeParams(journey.submissionID)
+    )
+
+    expect(response.status).toBe(202)
+
+    const beforeDelivery = await payload.db.pool.query<{
+      leads: string
+      notifications: string
+    }>(
+      `SELECT
+         (SELECT count(*) FROM leads lead
+            JOIN submissions submission ON submission.id = lead.submission_id
+           WHERE submission.external_id = $1) AS leads,
+         (SELECT count(*) FROM notification_requests request
+            JOIN submissions submission ON submission.id = request.submission_id
+           WHERE submission.external_id = $1) AS notifications`,
+      [journey.submissionID]
+    )
+
+    expect(beforeDelivery.rows).toEqual([{ leads: '0', notifications: '1' }])
+
+    for (let cycle = 0; cycle < 4; cycle += 1) {
+      await workerCycle()
+    }
+
+    const delivery = await payload.db.pool.query<{
+      delivery_id: number
+      outbox_id: number
+      state: string
+    }>(
+      `SELECT delivery.id AS delivery_id, outbox.id AS outbox_id, delivery.state
+         FROM email_deliveries delivery
+         JOIN submissions submission ON submission.id = delivery.submission_id
+         JOIN assessment_outbox outbox
+           ON outbox.type = 'report_email'
+          AND (outbox.payload->>'deliveryID')::integer = delivery.id
+        WHERE submission.external_id = $1`,
+      [journey.submissionID]
+    )
+
+    expect(delivery.rows).toEqual([
+      expect.objectContaining({ state: 'pending' }),
+    ])
+
+    const row = delivery.rows[0]
+
+    if (!row) {
+      throw new Error('Report notification delivery was not queued')
+    }
+
+    const originalEmailFrom = process.env.EMAIL_FROM
+    const originalOrigin = process.env.APP_ORIGIN
+    const originalPepper = process.env.REPORT_TOKEN_PEPPER
+    const captured: {
+      from: string
+      html: string
+      idempotencyKey: string
+      subject: string
+      to: string
+    }[] = []
+
+    try {
+      process.env.EMAIL_FROM = 'Reports <reports@example.test>'
+      process.env.APP_ORIGIN = ORIGIN
+      process.env.REPORT_TOKEN_PEPPER = 'test-report-token-pepper-32-chars'
+
+      await runReportEmail({
+        deliveryID: row.delivery_id,
+        outboxID: row.outbox_id,
+        payload,
+        resend: {
+          async send(email) {
+            captured.push(email)
+            return { id: 'captured-report-ready-email' }
+          },
+        },
+      })
+    } finally {
+      process.env.EMAIL_FROM = originalEmailFrom
+      process.env.APP_ORIGIN = originalOrigin
+      process.env.REPORT_TOKEN_PEPPER = originalPepper
+    }
+
+    expect(captured).toEqual([
+      expect.objectContaining({
+        from: 'Reports <reports@example.test>',
+        html: expect.stringContaining(`${ORIGIN}/report/`),
+        subject: 'Your workflow health report is ready',
+        to: 'notification-only@example.test',
+      }),
+    ])
+
+    const afterDelivery = await payload.db.pool.query<{
+      grants: string
+      leads: string
+      provider_message_id: string
+      state: string
+    }>(
+      `SELECT delivery.state, delivery.provider_message_id,
+              (SELECT count(*) FROM report_grants report_grant
+                WHERE report_grant.email_delivery_id = delivery.id) AS grants,
+              (SELECT count(*) FROM leads lead
+                JOIN submissions submission ON submission.id = lead.submission_id
+               WHERE submission.external_id = $1) AS leads
+         FROM email_deliveries delivery
+         JOIN submissions submission ON submission.id = delivery.submission_id
+        WHERE submission.external_id = $1`,
+      [journey.submissionID]
+    )
+
+    expect(afterDelivery.rows).toEqual([
+      {
+        grants: '1',
+        leads: '0',
+        provider_message_id: 'captured-report-ready-email',
+        state: 'sent',
+      },
+    ])
   })
 
   it('reclaims expired work after a worker restart and records terminal provider retries', async () => {
