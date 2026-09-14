@@ -54,7 +54,7 @@ const scoringForQuestion = (question: (typeof questions)[number]) => {
 }
 
 export const createFoundationDefinition = (
-  model = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash'
+  model = process.env.GEMINI_MODEL ?? 'gemini-3.5-flash-lite'
 ) =>
   questionnaireDefinitionSchema.parse({
     schemaVersion: 1,

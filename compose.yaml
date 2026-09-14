@@ -26,7 +26,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the deployment environment}
       EMAIL_FROM: ${EMAIL_FROM:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET in the deployment environment}
       REPORT_TOKEN_PEPPER: ${REPORT_TOKEN_PEPPER:?Set REPORT_TOKEN_PEPPER in the deployment environment}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
