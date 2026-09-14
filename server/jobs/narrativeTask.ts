@@ -56,7 +56,7 @@ export const runNarrative = async ({
 
     const categories = results.rows
       .filter((result: { eligible: boolean }) => result.eligible)
-      .map((result: { category_key: string; points: number }) => {
+      .map((result: { category_key: string; points: number | string }) => {
         const category = definition.categories.find(
           (candidate) => candidate.key === result.category_key
         )
@@ -68,7 +68,7 @@ export const runNarrative = async ({
         return {
           categoryKey: category.key,
           categoryLabel: category.label,
-          score: result.points,
+          score: Number(result.points),
           maxPoints: category.maxPoints,
         }
       })

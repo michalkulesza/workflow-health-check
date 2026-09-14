@@ -167,7 +167,7 @@ export const runAIEvaluation = async ({
 
     await client.query(
       `UPDATE scoring_runs SET state = $2, updated_at = now() WHERE id = $1`,
-      [runID, waiting.rowCount ? 'waiting_for_input' : 'complete']
+      [runID, waiting.rowCount ? 'waiting_for_input' : 'deterministic_done']
     )
 
     if (!waiting.rowCount) {

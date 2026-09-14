@@ -1,0 +1,424 @@
+import { randomUUID } from 'node:crypto'
+import { execFile } from 'node:child_process'
+import { once } from 'node:events'
+
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { getPayload, type Payload } from 'payload'
+
+import { createFoundationDefinition } from '@/server/content/foundationDefinition'
+import { publishQuestionnaire } from '@/server/content/publishQuestionnaire'
+
+const ORIGIN = 'http://assessment.test'
+const fixtureText =
+  'I repeatedly chase approvals in scattered messages and lose the current project status.'
+
+type Session = { cookie: string; csrfToken: string }
+type Journey = { session: Session; submissionID: string; versionID: string }
+
+let payload: Payload
+let questionnaireID: string
+let versionID: string
+
+const request = (path: string, init?: RequestInit) =>
+  new Request(`${ORIGIN}${path}`, init)
+
+const routeParams = (id: string) => ({ params: Promise.resolve({ id }) })
+
+const workerCycle = async () => {
+  const child = execFile(
+    process.execPath,
+    ['node_modules/tsx/dist/cli.mjs', 'scripts/worker.ts', '--once'],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        ASSESSMENT_TEST_PROVIDER_SCENARIO:
+          process.env.ASSESSMENT_TEST_PROVIDER_SCENARIO ?? 'complete',
+        NODE_ENV: 'test',
+        RUN_INTEGRATION_TESTS: 'true',
+      },
+      windowsHide: true,
+    }
+  )
+  const [code] = (await once(child, 'close')) as [number]
+
+  expect(code).toBe(0)
+}
+
+const completeWorkerRun = async () => {
+  for (let cycle = 0; cycle < 6; cycle += 1) {
+    await workerCycle()
+  }
+}
+
+const createSession = async (): Promise<Session> => {
+  const { POST } =
+    await import('@/app/(frontend)/api/assessment/v1/sessions/route')
+  const response = await POST(
+    request('/api/assessment/v1/sessions', {
+      headers: { origin: ORIGIN },
+      method: 'POST',
+    })
+  )
+  const body = (await response.json()) as { csrfToken: string }
+  const token = /assessment_session=([^;]+)/.exec(
+    response.headers.get('set-cookie') ?? ''
+  )?.[1]
+
+  if (!token) {
+    throw new Error('Session response did not set an assessment session cookie')
+  }
+
+  return { cookie: `assessment_session=${token}`, csrfToken: body.csrfToken }
+}
+
+const createJourney = async (): Promise<Journey> => {
+  const session = await createSession()
+  const { POST } =
+    await import('@/app/(frontend)/api/assessment/v1/submissions/route')
+  const response = await POST(
+    request('/api/assessment/v1/submissions', {
+      body: JSON.stringify({
+        displayedVersionId: versionID,
+        questionnaireId: questionnaireID,
+      }),
+      headers: { cookie: session.cookie, origin: ORIGIN },
+      method: 'POST',
+    })
+  )
+
+  expect(response.status).toBe(201)
+  const body = (await response.json()) as { submissionId: string }
+
+  return { session, submissionID: body.submissionId, versionID }
+}
+
+const answers = [
+  ['q1', ['producer'], null],
+  ['q2', ['6-10'], null],
+  ['q3', ['time-0', 'time-1', 'time-2', 'time-3'], null],
+  ['q4', ['reconstruct'], null],
+  ['q5', ['head'], null],
+  ['q6', ['depends'], null],
+  ['q7', ['forget'], null],
+  ['q8', ['unclear', 'follow-up', 'forget', 'lost', 'repeat', 'version', 'deadlines'], null],
+  ['q9', ['admin-0', 'admin-1', 'admin-2', 'admin-3', 'admin-4', 'admin-5', 'admin-6', 'admin-7', 'admin-8'], null],
+  ['q10', ['react'], null],
+  ['q11', [], fixtureText],
+  ['q12', [], 'I copy the same project updates into several tools each week.'],
+  ['q13', [], 'A deadline changed without a shared record, so I reconstructed the plan from messages.'],
+  ['q14', [], 'I would delegate follow-up reminders.'],
+  ['q15', [], 'I need one reliable project-status system.'],
+  ['q16', ['time-4'], null],
+] as const
+
+const saveAllAnswers = async (journey: Journey) => {
+  const { PUT } =
+    await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/answers/[questionKey]/route')
+  let revision = 0
+
+  for (const [questionKey, selectedOptionKeys, text] of answers) {
+    const response = await PUT(
+      request(
+        `/api/assessment/v1/submissions/${journey.submissionID}/answers/${questionKey}`,
+        {
+          body: JSON.stringify({
+            answer: {
+              state: 'answered',
+              selectedOptionKeys,
+              text,
+              optionText: {},
+            },
+            expectedRevision: revision,
+            mutationId: randomUUID(),
+            questionKey,
+            submissionId: journey.submissionID,
+          }),
+          headers: {
+            cookie: journey.session.cookie,
+            origin: ORIGIN,
+            'x-assessment-csrf': journey.session.csrfToken,
+          },
+          method: 'PUT',
+        }
+      ),
+      { params: Promise.resolve({ id: journey.submissionID, questionKey }) }
+    )
+
+    expect(response.status).toBe(200)
+    revision += 1
+  }
+
+  return revision
+}
+
+const submitJourney = async (journey: Journey, revision: number) => {
+  const { POST } =
+    await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/submit/route')
+  const response = await POST(
+    request(`/api/assessment/v1/submissions/${journey.submissionID}/submit`, {
+      body: JSON.stringify({
+        expectedRevision: revision,
+        mutationId: randomUUID(),
+        submissionId: journey.submissionID,
+      }),
+      headers: {
+        cookie: journey.session.cookie,
+        origin: ORIGIN,
+        'x-assessment-csrf': journey.session.csrfToken,
+      },
+      method: 'POST',
+    }),
+    routeParams(journey.submissionID)
+  )
+
+  expect(response.status).toBe(202)
+  return (await response.json()) as { runId: string }
+}
+
+beforeAll(async () => {
+  const { default: config } = await import('@/payload.config')
+
+  payload = await getPayload({ config })
+  questionnaireID = randomUUID()
+  const questionnaire = await payload.create({
+    collection: 'questionnaires',
+    data: { name: 'Complete journey integration', publicId: questionnaireID },
+    overrideAccess: true,
+  })
+  const definition = createFoundationDefinition('fixture-model')
+  const draft = await payload.create({
+    collection: 'questionnaire-versions',
+    data: {
+      questionnaire: questionnaire.id,
+      status: 'draft',
+      categories: definition.categories,
+      questions: definition.questions,
+      aiEvaluations: definition.aiEvaluations,
+      definition,
+      contentHash: 'created-by-hook',
+    },
+    overrideAccess: true,
+  })
+
+  await payload.update({
+    collection: 'questionnaires',
+    id: questionnaire.id,
+    data: { draftVersion: draft.id },
+    overrideAccess: true,
+  })
+  const published = await publishQuestionnaire({
+    payload,
+    questionnaireID: questionnaire.id,
+    draftVersionID: draft.id,
+  })
+
+  versionID = String(published.publishedVersionID)
+})
+
+afterAll(async () => {
+  await payload.destroy()
+})
+
+describe('complete 16-question assessment journey', () => {
+  it('persists a grounded report through the separate durable worker', async () => {
+    process.env.ASSESSMENT_TEST_PROVIDER_SCENARIO = 'complete'
+    const journey = await createJourney()
+    const revision = await saveAllAnswers(journey)
+    const submitted = await submitJourney(journey, revision)
+
+    await completeWorkerRun()
+
+    const result = await payload.db.pool.query<{
+      answer_snapshot: Record<string, { text: string | null }>
+      questionnaire_version_id: number
+      report: { priorities: { categoryKey: string }[]; status: string }
+      run_id: number
+      state: string
+    }>(
+      `SELECT run.id AS run_id, run.questionnaire_version_id, run.answer_snapshot,
+              run.report, run.state
+         FROM scoring_runs run
+         JOIN submissions submission ON submission.id = run.submission_id
+        WHERE submission.external_id = $1`,
+      [journey.submissionID]
+    )
+
+    expect(result.rows).toHaveLength(1)
+    expect(result.rows[0]).toMatchObject({
+      answer_snapshot: { q11: { text: fixtureText } },
+      questionnaire_version_id: Number(journey.versionID),
+      report: { priorities: [{ categoryKey: 'project' }, { categoryKey: 'people' }], status: 'complete' },
+      run_id: Number(submitted.runId),
+      state: 'complete',
+    })
+
+    const scores = await payload.db.pool.query<{
+      category_key: string
+      normalized: string
+      points: string
+    }>(
+      `SELECT category_key, normalized, points FROM scoring_results
+        WHERE scoring_run_id = $1 ORDER BY category_key`,
+      [submitted.runId]
+    )
+    const scoreByCategory = Object.fromEntries(
+      scores.rows.map((score) => [
+        score.category_key,
+        { normalized: Number(score.normalized), points: Number(score.points) },
+      ])
+    )
+
+    expect(scoreByCategory.project).toMatchObject({ normalized: 0, points: 0 })
+    expect(scoreByCategory.people?.normalized).toBeCloseTo(1 / 22)
+    expect(scoreByCategory.admin).toMatchObject({ normalized: 0.05, points: 1 })
+    expect(scoreByCategory.friction).toMatchObject({ normalized: 0.25, points: 5 })
+
+    const { GET: getReport } =
+      await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/report/route')
+    const report = await getReport(
+      request(`/api/assessment/v1/submissions/${journey.submissionID}/report`, {
+        headers: { cookie: journey.session.cookie },
+      }),
+      routeParams(journey.submissionID)
+    )
+
+    expect(report.status).toBe(200)
+    expect((await report.json()) as { status: string }).toMatchObject({
+      status: 'complete',
+    })
+
+    const { POST: captureContact } =
+      await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/contact/route')
+    const contactRequest = () =>
+      captureContact(
+        request(
+          `/api/assessment/v1/submissions/${journey.submissionID}/contact`,
+          {
+            body: JSON.stringify({
+              email: 'complete-journey@example.test',
+              idempotencyKey: '7c2f4494-2cbb-4cd7-825c-53b0b8973b94',
+              message: 'Fictional contact request for the integration journey.',
+              name: 'Integration respondent',
+              submissionId: journey.submissionID,
+            }),
+            headers: {
+              cookie: journey.session.cookie,
+              origin: ORIGIN,
+              'x-assessment-csrf': journey.session.csrfToken,
+            },
+            method: 'POST',
+          }
+        ),
+        routeParams(journey.submissionID)
+      )
+
+    expect((await contactRequest()).status).toBe(202)
+    expect((await contactRequest()).status).toBe(202)
+
+    const leads = await payload.db.pool.query<{
+      email: string
+      id: number
+      scoring_run_id: number
+      stage: string
+      submission_id: number
+    }>(
+      `SELECT lead.id, lead.submission_id, lead.scoring_run_id, lead.email, lead.stage
+         FROM leads lead
+         JOIN submissions submission ON submission.id = lead.submission_id
+        WHERE submission.external_id = $1`,
+      [journey.submissionID]
+    )
+
+    expect(leads.rows).toEqual([
+      expect.objectContaining({
+        email: 'complete-journey@example.test',
+        scoring_run_id: Number(submitted.runId),
+        stage: 'new',
+      }),
+    ])
+
+    const leadID = leads.rows[0]?.id
+
+    if (!leadID) {
+      throw new Error('Contact capture did not create a lead')
+    }
+
+    await payload.update({
+      collection: 'leads',
+      id: leadID,
+      data: { notes: 'Verified by the Step 6 integration journey.', stage: 'contacted' },
+      overrideAccess: true,
+    })
+    const updatedLead = await payload.findByID({
+      collection: 'leads',
+      id: leadID,
+      depth: 0,
+      overrideAccess: true,
+    })
+
+    expect(updatedLead).toMatchObject({
+      notes: 'Verified by the Step 6 integration journey.',
+      stage: 'contacted',
+    })
+  })
+
+  it('asks exactly one clarification and completes after its persisted response', async () => {
+    process.env.ASSESSMENT_TEST_PROVIDER_SCENARIO = 'clarification'
+    const journey = await createJourney()
+    const revision = await saveAllAnswers(journey)
+    await submitJourney(journey, revision)
+
+    await workerCycle()
+    await workerCycle()
+
+    const { POST: submitClarification } =
+      await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/clarification/route')
+    const clarificationRequest = () =>
+      submitClarification(
+        request(
+          `/api/assessment/v1/submissions/${journey.submissionID}/clarification`,
+          {
+            body: JSON.stringify({
+              evaluationKey: 'creative-friction',
+              response: 'I now record approvals in one shared project tracker.',
+              submissionId: journey.submissionID,
+            }),
+            headers: {
+              cookie: journey.session.cookie,
+              origin: ORIGIN,
+              'x-assessment-csrf': journey.session.csrfToken,
+            },
+            method: 'POST',
+          }
+        ),
+        routeParams(journey.submissionID)
+      )
+
+    const accepted = await clarificationRequest()
+    expect(accepted.status).toBe(202)
+    expect((await clarificationRequest()).status).toBe(409)
+
+    await completeWorkerRun()
+
+    const evaluation = await payload.db.pool.query<{
+      attempts: string
+      clarification_response: string
+      state: string
+    }>(
+      `SELECT evaluation.state, evaluation.attempts, evaluation.clarification_response
+         FROM scoring_ai_evaluations evaluation
+         JOIN scoring_runs run ON run.id = evaluation.scoring_run_id
+         JOIN submissions submission ON submission.id = run.submission_id
+        WHERE submission.external_id = $1`,
+      [journey.submissionID]
+    )
+
+    expect(evaluation.rows).toHaveLength(1)
+    expect(evaluation.rows[0]).toMatchObject({
+      attempts: '2',
+      clarification_response: 'I now record approvals in one shared project tracker.',
+      state: 'complete',
+    })
+  })
+})

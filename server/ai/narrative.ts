@@ -1,6 +1,8 @@
 import { GoogleGenAI } from '@google/genai'
 import { z } from 'zod'
 
+import { createTestNarrativeProvider } from './testHarness'
+
 const narrativePrioritySchema = z.object({
   categoryKey: z.string().min(1).max(128),
   explanation: z.string().trim().min(1).max(4_000),
@@ -39,6 +41,12 @@ export const createNarrativeProvider = (
   apiKey = process.env.GEMINI_API_KEY,
   model = process.env.GEMINI_MODEL
 ): NarrativeProvider => {
+  const testProvider = createTestNarrativeProvider()
+
+  if (testProvider) {
+    return testProvider
+  }
+
   if (!apiKey || !model) {
     throw new Error(
       'GEMINI_API_KEY and GEMINI_MODEL are required for narratives'

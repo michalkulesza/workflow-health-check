@@ -1,6 +1,8 @@
 import { GoogleGenAI } from '@google/genai'
 import { z } from 'zod'
 
+import { createTestGeminiProvider } from './testHarness'
+
 const evidenceSchema = z.object({
   questionKey: z.string().min(1).max(128),
   excerpt: z.string().min(1).max(1_000),
@@ -104,6 +106,12 @@ const makePrompt = (request: GeminiEvaluationRequest): string =>
 export const createGeminiProvider = (
   apiKey = process.env.GEMINI_API_KEY
 ): GeminiProvider => {
+  const testProvider = createTestGeminiProvider()
+
+  if (testProvider) {
+    return testProvider
+  }
+
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is required to evaluate assessments')
   }
