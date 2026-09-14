@@ -74,6 +74,19 @@ export const Assessment = ({
 
   const refreshReport = async (submissionId: string) => {
     const nextReport = await adapter.getReport(submissionId)
+
+    if (nextReport.status === 'pending') {
+      const nextSubmission = await adapter.getSubmission(submissionId)
+
+      if (nextSubmission.state === 'awaiting_clarification') {
+        setSubmission(nextSubmission)
+        setSaveState('idle')
+        setScreen('clarification')
+
+        return
+      }
+    }
+
     setReport(nextReport)
 
     setScreen('results')
@@ -300,7 +313,11 @@ export const Assessment = ({
         <h1 ref={heading} tabIndex={-1}>
           {submission.clarification.prompt}
         </h1>
+        <label className="sr-only" htmlFor="clarification-response">
+          {submission.clarification.prompt}
+        </label>
         <textarea
+          id="clarification-response"
           rows={7}
           value={clarification}
           onChange={(event) => setClarification(event.target.value)}

@@ -1,0 +1,12 @@
+services:
+  web:
+    environment:
+      NODE_ENV: test
+      RUN_INTEGRATION_TESTS: 'true'
+      ASSESSMENT_TEST_PROVIDER_SCENARIO: ${ASSESSMENT_TEST_PROVIDER_SCENARIO:?Set an isolated provider scenario}
+
+  worker:
+    environment:
+      NODE_ENV: test
+      RUN_INTEGRATION_TESTS: 'true'
+      ASSESSMENT_TEST_PROVIDER_SCENARIO: ${ASSESSMENT_TEST_PROVIDER_SCENARIO:?Set an isolated provider scenario}
