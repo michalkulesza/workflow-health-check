@@ -249,9 +249,10 @@ describe('assessment session routes', () => {
     }>(
       `SELECT assessment_outbox.state AS outbox_state, scoring_runs.state AS run_state,
               scoring_runs.answer_snapshot AS snapshot
-         FROM assessment_outbox
+        FROM assessment_outbox
          JOIN scoring_runs ON assessment_outbox.payload->>'runID' = scoring_runs.id::text
-        WHERE scoring_runs.submission_id = (SELECT id FROM submissions WHERE external_id = $1)`,
+        WHERE scoring_runs.submission_id = (SELECT id FROM submissions WHERE external_id = $1)
+          AND assessment_outbox.type = 'deterministic_score'`,
       [submission.submissionId]
     )
 
