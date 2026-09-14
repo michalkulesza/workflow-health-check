@@ -4,6 +4,8 @@ Workflow Check is a persistent, CMS-driven assessment for creative professionals
 
 ## Local setup
 
+For public UI design and new components, follow [the design system](docs/specs/DESIGN_SYSTEM.md). It defines the reference palette, typography, spacing, buttons, form controls, layouts, and interaction states.
+
 Requires Node.js 22.20.0 and npm 11.17.0 (see `.nvmrc` and `packageManager`), plus Docker Compose. Copy `.env.example` to a private `.env.development.local`; it is ignored and must never target a non-disposable database.
 
 ```powershell
