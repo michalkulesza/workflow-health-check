@@ -163,6 +163,7 @@ export const Assessment = ({
   if (!questionnaire || !submission) {
     return (
       <main className="narrow center" aria-live="polite">
+        <h1>Workflow health check</h1>
         <p>Loading your assessment…</p>
       </main>
     )
