@@ -25,6 +25,7 @@ export const POST = async (request: Request) => {
   }
 
   const payload = await getPayload({ config })
+
   const existingSession = await getAnonymousSession({
     payload,
     sessionToken: cookieValue(request, sessionCookieName),

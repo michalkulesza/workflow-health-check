@@ -20,6 +20,7 @@ test.describe('configured preview assessment journey', () => {
       .locator('input[type="radio"], input[type="checkbox"]')
       .first()
       .check()
+
     await page.getByRole('button', { name: 'Next' }).click()
     await expect(page.getByText('Question 2 of 16')).toBeVisible()
 
@@ -58,9 +59,11 @@ test.describe('configured preview assessment journey', () => {
     await expect(
       page.getByRole('heading', { name: 'Your answers' })
     ).toBeVisible()
+
     await page.getByRole('button', { name: 'See my results' }).click()
 
     await expect(page.getByRole('heading')).toBeVisible({ timeout: 90_000 })
+
     await expect(
       page.getByRole('button', { name: 'Request help' })
     ).toBeVisible()
@@ -72,6 +75,7 @@ test.describe('configured preview assessment journey', () => {
     if (await notificationEmail.isVisible().catch(() => false)) {
       await notificationEmail.fill('preview-notification@example.test')
       await page.getByRole('button', { name: 'Notify me when ready' }).click()
+
       await expect(
         page.getByText(
           /we.ll email this private report link|couldn.t save that request/i
@@ -80,14 +84,19 @@ test.describe('configured preview assessment journey', () => {
     }
 
     await page.getByRole('button', { name: 'Request help' }).click()
+
     await page
       .getByLabel(/email required/i)
       .fill('preview-contact@example.test')
+
     await page.getByLabel(/name optional/i).fill('Preview verification')
+
     await page
       .getByLabel(/what would you like help with/i)
       .fill('Fictional request used only for disposable-preview verification.')
+
     await page.getByRole('button', { name: 'Send request' }).click()
+
     await expect(
       page.getByRole('button', { name: 'Request help' })
     ).toBeVisible()

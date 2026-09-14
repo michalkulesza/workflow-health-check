@@ -51,6 +51,7 @@ export const GET = async (request: Request, { params }: Props) => {
   const questionnaireCandidates = candidates.filter(
     (candidate) => candidate.questionnaireId === id
   )
+
   const submission =
     questionnaireCandidates.find(
       (candidate) => candidate.state !== 'in_progress'
