@@ -6,12 +6,12 @@ Workflow Check is a persistent, CMS-driven assessment for creative professionals
 
 For public UI design and new components, follow [the design system](docs/specs/DESIGN_SYSTEM.md). It defines the reference palette, typography, spacing, buttons, form controls, layouts, and interaction states.
 
-Requires Node.js 22.20.0 and npm 11.17.0 (see `.nvmrc` and `packageManager`), plus Docker Compose. Copy `.env.example` to a private `.env.development.local`; it is ignored and must never target a non-disposable database.
+Requires Node.js 22.20.0 and npm 11.17.0 (see `.nvmrc` and `packageManager`), plus Docker Compose. Use one private `.env` for local web, worker, and CLI settings. On a fresh checkout, copy `.env.example` only if `.env` does not already exist, then fill in its secrets. It is ignored and must never target a non-disposable database.
 
 ```powershell
 npm.cmd ci
-Copy-Item .env.example .env.development.local
-docker compose --env-file .env.development.local -f compose.postgres.yaml up --detach --wait
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+docker compose --env-file .env -f compose.postgres.yaml up --detach --wait
 $env:NODE_ENV='development'
 npm.cmd run db:migrate
 npm.cmd run db:seed
@@ -23,7 +23,7 @@ npm.cmd run dev
 
 Start `npm.cmd run worker` in a second terminal to process submissions. Admin is available at `/admin`. The seed publishes questionnaire `5dc13945-9cb8-4e6b-b504-187c885e0e34`; re-running migration and seed is safe and does not overwrite an existing admin, active submission, or published questionnaire. Remove bootstrap credentials after the first admin is created.
 
-Next loads `.env.development.local` for development; CLI tools also load it through Payload's runtime loader. CI and explicit process variables take precedence for integration tests. Host-run tools use `127.0.0.1:55432`; containers use the Compose service hostname in `DATABASE_URL`. Do not set `PAYLOAD_SCHEMA_PUSH=true`: normal setup is migrations-only.
+Next dev, build/start, and CLI tools load `.env`; restart running processes after changing it. Explicit process/CI variables take precedence, including in integration tests. Avoid `.env.local` and `.env.development.local` overrides so local settings have one source. `.env.example` is the committed blank template. Keep `.env.preview.local` separate for the container preview and pass it explicitly with `docker compose --env-file .env.preview.local`; Next does not load that file automatically. Host-run tools use `127.0.0.1:55432`; containers use the Compose service hostname in `DATABASE_URL`. Do not set `PAYLOAD_SCHEMA_PUSH=true`: normal setup is migrations-only.
 
 The questionnaire and report routes are noindex, but that is not an authorization control. Private submissions and reports require their corresponding session or report grant.
 

@@ -29,7 +29,7 @@ const secret = process.env.PAYLOAD_SECRET
 const connectionString = process.env.DATABASE_URL
 
 if (!secret || secret.length < 32) {
-  throw new Error('Set PAYLOAD_SECRET to at least 32 characters in .env.local')
+  throw new Error('Set PAYLOAD_SECRET to at least 32 characters in .env')
 }
 
 if (!connectionString) {

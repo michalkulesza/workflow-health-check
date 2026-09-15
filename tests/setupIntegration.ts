@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 
 import { assertDisposableTestDatabase } from '@/server/operations/testDatabase'
 
-const environmentFile = '.env.development.local'
+const environmentFile = '.env'
 
 if (existsSync(environmentFile)) {
   for (const line of readFileSync(environmentFile, 'utf8').split(/\r?\n/)) {

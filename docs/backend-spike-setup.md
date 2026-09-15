@@ -6,15 +6,15 @@ Public routes now live under `app/(frontend)`; the URLs are unchanged. Payload h
 
 ## Environment
 
-Install the locked dependencies with `npm.cmd ci`. The repository includes `compose.yaml` for a disposable PostgreSQL 16 database. Its port is bound only to `127.0.0.1:55432`; it is not exposed to the LAN. The generated `.env.development.local` is ignored by Git and contains the local database, Payload, and bootstrap credentials. Do not commit, copy into a deployment environment, or reuse those credentials.
+Install the locked dependencies with `npm.cmd ci`. The repository includes `compose.yaml` for a disposable PostgreSQL 16 database. Its port is bound only to `127.0.0.1:55432`; it is not exposed to the LAN. The generated `.env` is ignored by Git and contains the local database, Payload, and bootstrap credentials. Do not commit, copy into a deployment environment, or reuse those credentials.
 
 The prerequisite is Docker Desktop (or another Docker Engine) with the Compose v2 plugin running and available as `docker`. Start the disposable database and wait for its health check:
 
 ```powershell
-docker compose --env-file .env.development.local -f compose.yaml -f compose.dev.yaml up --detach --wait postgres
+docker compose --env-file .env -f compose.yaml -f compose.dev.yaml up --detach --wait postgres
 ```
 
-Run the local CLI commands below with `NODE_ENV=development`, which makes their `@next/env` loader use `.env.development.local` just like `next dev` does:
+Run the local CLI commands below with `NODE_ENV=development`, their `@next/env` loader reads `.env`, as do `next dev` and production build/start:
 
 ```powershell
 $env:NODE_ENV='development'
@@ -39,7 +39,7 @@ Open `/admin` and log in. Remove the bootstrap environment variables afterward. 
 
 ## Durable job check
 
-With schema initialized, set `PAYLOAD_SCHEMA_PUSH=false` in `.env.development.local` before starting multiple processes, then restart each CLI process. Do not enable schema push against an existing or valuable database.
+With schema initialized, set `PAYLOAD_SCHEMA_PUSH=false` in `.env` before starting multiple processes, then restart each CLI process. Do not enable schema push against an existing or valuable database.
 
 ```powershell
 npm.cmd run job:fixture -- queue
