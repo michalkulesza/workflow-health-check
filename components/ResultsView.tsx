@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
-import type { Report } from '@/lib/assessment/contracts'
+import { emailSchema, type Report } from '@/lib/assessment/contracts'
 import { browserAssessmentAdapter } from '@/lib/assessment/browserAdapter'
 
 import { ContactStep } from './ContactStep'
@@ -19,7 +19,9 @@ export const ResultsView = ({
   const [isContactOpen, setIsContactOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [notice, setNotice] = useState('')
+  const [emailError, setEmailError] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const notificationEmailInput = useRef<HTMLInputElement>(null)
 
   if (isContactOpen && submissionId) {
     return (
@@ -40,13 +42,30 @@ export const ResultsView = ({
       return
     }
 
+    const normalizedEmail = email.trim()
+
+    if (!normalizedEmail) {
+      setEmailError('Enter your email address to get notified.')
+      notificationEmailInput.current?.focus()
+
+      return
+    }
+
+    if (!emailSchema.safeParse(normalizedEmail).success) {
+      setEmailError('Enter a valid email address, like name@example.com.')
+      notificationEmailInput.current?.focus()
+
+      return
+    }
+
+    setEmailError('')
     setIsSending(true)
     setNotice('')
 
     try {
       await adapter.requestNotification({
         submissionId,
-        email,
+        email: normalizedEmail,
         purpose: 'report_ready',
       })
 
@@ -115,15 +134,26 @@ export const ResultsView = ({
             <div className="inline-form">
               <input
                 id="notify-email"
+                ref={notificationEmailInput}
                 type="email"
                 required
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value)
+                  setEmailError('')
+                }}
+                aria-describedby={emailError ? 'notify-email-error' : undefined}
+                aria-invalid={Boolean(emailError)}
               />
               <button className="assessment-button" disabled={isSending}>
                 {isSending ? 'Saving…' : 'Notify me when ready'}
               </button>
             </div>
+            {emailError && (
+              <p className="assessment-error" id="notify-email-error">
+                {emailError}
+              </p>
+            )}
           </form>
           {notice && (
             <p className={notice.startsWith('We couldn') ? 'error' : 'success'}>
