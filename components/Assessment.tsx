@@ -136,6 +136,7 @@ export const Assessment = ({
             return
           }
         }
+        if (!active) return
         setReport(next)
         setScreen('results')
       } catch {
@@ -305,7 +306,7 @@ export const Assessment = ({
         <span className="assessment-loader" aria-hidden="true" />
         <p className="assessment-eyebrow">Reviewing your answers</p>
         <h1 ref={heading} tabIndex={-1}>
-          Looking for the clearest priorities
+          Generating your workflow results
         </h1>
         <p>
           We’re preparing your results. You can keep this page open while we

@@ -943,8 +943,8 @@ footer {
   padding: 24px;
 }
 .results .badge {
-  color: var(--color-primary);
-  background: var(--color-primary-soft);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
   border-radius: var(--radius-pill);
 }
 .results .first-step {

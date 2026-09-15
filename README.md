@@ -15,8 +15,8 @@ docker compose --env-file .env -f compose.postgres.yaml up --detach --wait
 $env:NODE_ENV='development'
 npm.cmd run db:migrate
 npm.cmd run db:seed
-$env:BOOTSTRAP_ADMIN_EMAIL='admin@example.test'
-$env:BOOTSTRAP_ADMIN_PASSWORD='use-a-unique-password-of-at-least-16-characters'
+$env:BOOTSTRAP_ADMIN_EMAIL='root@root.com'
+$env:BOOTSTRAP_ADMIN_PASSWORD='rootrootrootroot'
 npm.cmd run admin:bootstrap
 npm.cmd run dev
 ```
@@ -24,6 +24,8 @@ npm.cmd run dev
 Start `npm.cmd run worker` in a second terminal to process submissions. Admin is available at `/admin`. The seed publishes questionnaire `5dc13945-9cb8-4e6b-b504-187c885e0e34`; re-running migration and seed is safe and does not overwrite an existing admin, active submission, or published questionnaire. Remove bootstrap credentials after the first admin is created.
 
 Next dev, build/start, and CLI tools load `.env`; restart running processes after changing it. Explicit process/CI variables take precedence, including in integration tests. Avoid `.env.local` and `.env.development.local` overrides so local settings have one source. `.env.example` is the committed blank template. Keep `.env.preview.local` separate for the container preview and pass it explicitly with `docker compose --env-file .env.preview.local`; Next does not load that file automatically. Host-run tools use `127.0.0.1:55432`; containers use the Compose service hostname in `DATABASE_URL`. Do not set `PAYLOAD_SCHEMA_PUSH=true`: normal setup is migrations-only.
+
+Set `GEMINI_MODEL=gemini-3.5-flash-lite` for reflection analysis and report narratives. A nonblank `GEMINI_MODEL` overrides the reflection model in saved questionnaire snapshots when the worker evaluates a run; without an override, reflection analysis uses the saved model. Restart the worker after changing the environment. Previously failed reports are not automatically retried.
 
 The questionnaire and report routes are noindex, but that is not an authorization control. Private submissions and reports require their corresponding session or report grant.
 

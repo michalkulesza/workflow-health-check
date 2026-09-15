@@ -126,7 +126,6 @@ export const questions: Question[] = [
     type: 'multi',
     required: true,
     maxSelections: 4,
-    instructions: 'Choose up to four.',
     strategy: 'none',
     options: [
       'Finding information/files',

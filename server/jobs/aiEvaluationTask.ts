@@ -133,7 +133,7 @@ export const runAIEvaluation = async ({
       }
 
       const providerRequest = {
-        model: evaluation.model,
+        model: process.env.GEMINI_MODEL?.trim() || evaluation.model,
         promptVersion: evaluation.promptVersion,
         rubricVersion: evaluation.rubricVersion,
         levels: evaluation.levels,

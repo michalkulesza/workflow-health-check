@@ -61,6 +61,16 @@ export const GET = withAssessmentErrorBoundary(
       )
     }
 
+    if (!['complete', 'partial', 'failed'].includes(row.state)) {
+      return Response.json(
+        pendingReport(
+          row.definition_snapshot.categories?.map((category) => category.key) ??
+            []
+        ),
+        { headers: { 'Cache-Control': 'no-store' } }
+      )
+    }
+
     const report = row.report
       ? reportSchema.parse(row.report)
       : row.state === 'failed'

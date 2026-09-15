@@ -64,11 +64,13 @@ export const ResultsView = ({
     <main className="results" data-theme="light">
       <p className="eyebrow">Your workflow check</p>
       <h1>
-        {report.priorities.length
-          ? report.summary
-          : report.status === 'complete'
-            ? 'No major issues identified'
-            : report.summary}
+        {report.status === 'pending'
+          ? 'Generating your workflow results'
+          : report.priorities.length
+            ? report.summary
+            : report.status === 'complete'
+              ? 'No major issues identified'
+              : report.summary}
       </h1>
       {report.priorities.map((priority, index) => (
         <article className="priority" key={priority.categoryKey}>
@@ -96,8 +98,16 @@ export const ResultsView = ({
       ))}
       {report.status === 'pending' && submissionId && (
         <aside className="notice">
-          <strong>Reflection-based analysis pending</strong>
-          <p>{report.summary}</p>
+          <div role="status" aria-live="polite">
+            <div className="loader" aria-hidden="true" />
+            <strong>
+              Your answers are saved. We’re preparing your report.
+            </strong>
+            <p>
+              Your results will appear here automatically when ready. You can
+              keep this page open or get an email notification below.
+            </p>
+          </div>
           <form onSubmit={requestNotification} noValidate>
             <label htmlFor="notify-email">
               Email for the report notification
