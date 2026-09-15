@@ -10,6 +10,7 @@ import * as migration_20260913_180000_report_notifications from './20260913_1800
 import * as migration_20260913_190000_lead_pipeline from './20260913_190000_lead_pipeline'
 import * as migration_20260913_200000_runtime_operations from './20260913_200000_runtime_operations'
 import * as migration_20260914_120000_lead_lock_relation from './20260914_120000_lead_lock_relation'
+import * as migration_20260914_190000_provider_usage_provenance from './20260914_190000_provider_usage_provenance'
 
 export const migrations = [
   {
@@ -71,5 +72,10 @@ export const migrations = [
     up: migration_20260914_120000_lead_lock_relation.up,
     down: migration_20260914_120000_lead_lock_relation.down,
     name: '20260914_120000_lead_lock_relation',
+  },
+  {
+    up: migration_20260914_190000_provider_usage_provenance.up,
+    down: migration_20260914_190000_provider_usage_provenance.down,
+    name: '20260914_190000_provider_usage_provenance',
   },
 ]

@@ -78,15 +78,24 @@ describe('narrative worker', () => {
     })
 
     const narrate = vi.fn(async () => ({
-      summary: 'Delivery is affected by missed changes.',
-      priorities: [
-        {
-          categoryKey: 'delivery',
-          explanation: 'Changes are missed in messages.',
-          firstStep: 'Record changes in one shared place.',
-          evidence: [{ questionKey: 'q1', excerpt: 'missed in messages' }],
-        },
-      ],
+      output: {
+        summary: 'Delivery is affected by missed changes.',
+        priorities: [
+          {
+            categoryKey: 'delivery',
+            explanation: 'Changes are missed in messages.',
+            firstStep: 'Record changes in one shared place.',
+            evidence: [{ questionKey: 'q1', excerpt: 'missed in messages' }],
+          },
+        ],
+      },
+      usage: {
+        cachedContentTokens: null,
+        outputTokens: 8,
+        promptTokens: 12,
+        reasoningTokens: null,
+        totalTokens: 20,
+      },
     }))
 
     await runNarrative({
@@ -108,7 +117,7 @@ describe('narrative worker', () => {
 
     expect(query).toHaveBeenCalledWith(
       expect.stringContaining('report = $2::jsonb'),
-      expect.arrayContaining([7])
+      expect.arrayContaining([7, expect.stringContaining('"totalTokens":20')])
     )
   })
 

@@ -13,7 +13,9 @@ const scenario = (): ProviderScenario | null => {
 
   const value = process.env.ASSESSMENT_TEST_PROVIDER_SCENARIO
 
-  return value === 'complete' || value === 'clarification' || value === 'terminal_failure'
+  return value === 'complete' ||
+    value === 'clarification' ||
+    value === 'terminal_failure'
     ? value
     : null
 }
@@ -44,9 +46,12 @@ export const createTestGeminiProvider = (): GeminiProvider | null => {
           score: null,
           confidence: 0.4,
           themes: ['Missing outcome'],
-          explanation: 'The initial fictional evidence needs one clarification.',
+          explanation:
+            'The initial fictional evidence needs one clarification.',
           insufficientInformation: true,
-          evidence: [{ questionKey: evidence.questionKey, excerpt: evidence.answer }],
+          evidence: [
+            { questionKey: evidence.questionKey, excerpt: evidence.answer },
+          ],
           followUpQuestion: 'What changed after you tried to improve this?',
         }
       }
@@ -62,7 +67,9 @@ export const createTestGeminiProvider = (): GeminiProvider | null => {
         themes: ['Manual coordination'],
         explanation: 'The fictional evidence describes recurring manual work.',
         insufficientInformation: false,
-        evidence: [{ questionKey: evidence.questionKey, excerpt: evidence.answer }],
+        evidence: [
+          { questionKey: evidence.questionKey, excerpt: evidence.answer },
+        ],
         followUpQuestion: null,
       }
     },
@@ -76,7 +83,9 @@ export const createTestNarrativeProvider = (): NarrativeProvider | null => {
 
   return {
     async narrate(input) {
-      const evidence = input.answers.find((answer) => answer.questionKey === 'q11')
+      const evidence = input.answers.find(
+        (answer) => answer.questionKey === 'q11'
+      )
 
       if (!evidence) {
         throw new Error('Test provider requires the q11 answer')
@@ -85,12 +94,16 @@ export const createTestNarrativeProvider = (): NarrativeProvider | null => {
       return {
         summary: 'The fictional respondent has clear workflow priorities.',
         priorities: input.categories
-          .filter((category) => ['project', 'people'].includes(category.categoryKey))
+          .filter((category) =>
+            ['project', 'people'].includes(category.categoryKey)
+          )
           .map((category) => ({
-          categoryKey: category.categoryKey,
-          explanation: `The fictional evidence shows friction in ${category.categoryLabel}.`,
-          firstStep: 'Record the next action and owner in one shared place.',
-          evidence: [{ questionKey: evidence.questionKey, excerpt: evidence.answer }],
+            categoryKey: category.categoryKey,
+            explanation: `The fictional evidence shows friction in ${category.categoryLabel}.`,
+            firstStep: 'Record the next action and owner in one shared place.',
+            evidence: [
+              { questionKey: evidence.questionKey, excerpt: evidence.answer },
+            ],
           })),
       }
     },

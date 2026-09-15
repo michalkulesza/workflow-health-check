@@ -11,47 +11,46 @@ import type {
 } from '@/lib/assessment/contracts'
 import { AssessmentAdapterError } from '@/lib/assessment/adapter'
 import { browserAssessmentAdapter } from '@/lib/assessment/browserAdapter'
-
 import { QuestionField } from './QuestionField'
 import { ResultsView } from './ResultsView'
 
-type Screen = 'question' | 'review' | 'processing' | 'clarification' | 'results'
-
+type Screen =
+  'question' | 'resume' | 'review' | 'processing' | 'clarification' | 'results'
+const adapter = browserAssessmentAdapter
 const emptyAnswer = (): AnswerValue => ({
   state: 'skipped',
   selectedOptionKeys: [],
   text: null,
   optionText: {},
 })
-const adapter = browserAssessmentAdapter
-
-const answerError = (
-  question: Questionnaire['questions'][number],
-  answer: AnswerValue
-): string => {
-  if (!question.required) {
-    return ''
-  }
-
-  if (answer.state !== 'answered') {
+const validate = (q: Questionnaire['questions'][number], a: AnswerValue) => {
+  if (!q.required && a.state === 'skipped') return ''
+  if (a.state !== 'answered') return 'Please add an answer before continuing.'
+  if (q.type === 'text' && !a.text?.trim())
     return 'Please add an answer before continuing.'
-  }
-
-  if (question.type === 'text' && !answer.text?.trim()) {
-    return 'Please add an answer before continuing.'
-  }
-
-  if (question.type !== 'text' && answer.selectedOptionKeys.length === 0) {
+  if (q.type !== 'text' && !a.selectedOptionKeys.length)
     return 'Choose an answer before continuing.'
-  }
-
-  const missingText = answer.selectedOptionKeys.some(
+  return a.selectedOptionKeys.some(
     (key) =>
-      question.options.find((option) => option.key === key)?.requiresText &&
-      !answer.optionText[key]?.trim()
+      q.options.find((o) => o.key === key)?.requiresText &&
+      !a.optionText[key]?.trim()
   )
-
-  return missingText ? 'Please add details for the selected option.' : ''
+    ? 'Please add details for the selected option.'
+    : ''
+}
+const summary = (q: Questionnaire['questions'][number], a?: AnswerValue) => {
+  if (!a || a.state === 'skipped') return 'Skipped'
+  if (q.type === 'text') return a.text?.trim() || 'Skipped'
+  return (
+    a.selectedOptionKeys
+      .flatMap((key) => {
+        const option = q.options.find((item) => item.key === key)
+        if (!option) return []
+        const detail = a.optionText[key]?.trim()
+        return detail ? `${option.label}: ${detail}` : option.label
+      })
+      .join(', ') || 'Skipped'
+  )
 }
 
 export const Assessment = ({
@@ -62,166 +61,143 @@ export const Assessment = ({
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null)
   const [submission, setSubmission] = useState<Submission | null>(null)
   const [screen, setScreen] = useState<Screen>('question')
-  const [draft, setDraft] = useState<AnswerValue>(emptyAnswer())
+  const [drafts, setDrafts] = useState<Record<string, AnswerValue>>({})
   const [error, setError] = useState('')
-
   const [saveState, setSaveState] = useState<
     'idle' | 'saving' | 'saved' | 'error'
   >('idle')
   const [report, setReport] = useState<Report | null>(null)
   const [clarification, setClarification] = useState('')
+  const [returnToReview, setReturnToReview] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null)
-
-  const refreshReport = async (submissionId: string) => {
-    const nextReport = await adapter.getReport(submissionId)
-
-    if (nextReport.status === 'pending') {
-      const nextSubmission = await adapter.getSubmission(submissionId)
-
-      if (nextSubmission.state === 'awaiting_clarification') {
-        setSubmission(nextSubmission)
-        setSaveState('idle')
-        setScreen('clarification')
-
-        return
-      }
-    }
-
-    setReport(nextReport)
-
-    setScreen('results')
-  }
-
-  useEffect(() => {
-    let active = true
-
-    void (async () => {
-      try {
-        const content = await adapter.getQuestionnaire(questionnaireId)
-        await adapter.createSession()
-        const resumed = await adapter.getResume(questionnaireId)
-
-        if (!active) {
-          return
-        }
-
-        setQuestionnaire(content)
-
-        if (resumed) {
-          setSubmission(resumed)
-
-          setScreen(
-            resumed.state === 'awaiting_clarification'
+  const initialise = async () => {
+    setError('')
+    try {
+      await adapter.createSession()
+      const [content, resumed] = await Promise.all([
+        adapter.getQuestionnaire(questionnaireId),
+        adapter.getResume(questionnaireId),
+      ])
+      setQuestionnaire(content)
+      if (resumed) {
+        setSubmission(resumed)
+        setScreen(
+          resumed.state === 'in_progress'
+            ? Object.keys(resumed.answers).length
+              ? 'resume'
+              : 'question'
+            : resumed.state === 'awaiting_clarification'
               ? 'clarification'
-              : resumed.state === 'in_progress'
-                ? 'question'
-                : 'processing'
-          )
-        } else {
-          setSubmission(
-            await adapter.createSubmission({
-              questionnaireId,
-              displayedVersionId: content.versionId,
-            })
-          )
-        }
-      } catch {
-        if (active) {
-          setError(
-            'We could not load this assessment. Please try again shortly.'
-          )
-        }
-      }
-    })()
-
-    return () => {
-      active = false
+              : 'processing'
+        )
+      } else
+        setSubmission(
+          await adapter.createSubmission({
+            questionnaireId,
+            displayedVersionId: content.versionId,
+          })
+        )
+    } catch {
+      setError(
+        'We could not load this assessment. Check your connection and try again.'
+      )
     }
+  }
+  useEffect(() => {
+    void initialise()
   }, [questionnaireId])
-
   useEffect(() => {
     heading.current?.focus()
   }, [screen, submission?.currentStep])
-
   useEffect(() => {
     if (
       !submission ||
       !['submitted', 'processing', 'ready', 'partial', 'failed'].includes(
         submission.state
       )
-    ) {
+    )
       return
+    const refresh = async () => {
+      const next = await adapter.getReport(submission.submissionId)
+      if (next.status === 'pending') {
+        const current = await adapter.getSubmission(submission.submissionId)
+        if (current.state === 'awaiting_clarification') {
+          setSubmission(current)
+          setScreen('clarification')
+          return
+        }
+      }
+      setReport(next)
+      setScreen('results')
     }
-
-    const timer = window.setInterval(() => {
-      void refreshReport(submission.submissionId).catch(() => undefined)
-    }, 3000)
-    void refreshReport(submission.submissionId).catch(() => undefined)
-
+    void refresh().catch(() => undefined)
+    const timer = window.setInterval(
+      () => void refresh().catch(() => undefined),
+      3000
+    )
     return () => window.clearInterval(timer)
   }, [submission])
-
-  if (error && !questionnaire) {
+  if (error && !questionnaire)
     return (
-      <main className="narrow center">
+      <main className="assessment-shell assessment-center" data-theme="light">
         <h1>Assessment unavailable</h1>
-        <p className="error">{error}</p>
-        <Link className="button" href="/">
-          Return home
+        <p className="assessment-error">{error}</p>
+        <button className="assessment-button" onClick={() => void initialise()}>
+          Retry
+        </button>
+        <Link href="/" className="assessment-link">
+          Back to site
         </Link>
       </main>
     )
-  }
-
-  if (!questionnaire || !submission) {
+  if (!questionnaire || !submission)
     return (
-      <main className="narrow center" aria-live="polite">
-        <h1>Workflow health check</h1>
-        <p>Loading your assessment…</p>
+      <main
+        className="assessment-shell assessment-center"
+        data-theme="light"
+        aria-live="polite"
+      >
+        <p className="assessment-wordmark">WORKFLOW CHECK</p>
+        <h1>Preparing your assessment</h1>
+        <p>Loading your questions…</p>
       </main>
     )
-  }
-
-  const question = questionnaire.questions[submission.currentStep]
-
+  const q = questionnaire.questions[submission.currentStep]
   const category = questionnaire.categories.find(
-    (candidate) => candidate.key === question?.categoryKey
+    (item) => item.key === q?.categoryKey
   )
-  const currentAnswer = submission.answers[question?.key] ?? draft
-
-  const saveCurrent = async (nextStep: number) => {
-    if (!question) {
-      return false
-    }
-
-    const message = answerError(question, currentAnswer)
-
+  const answer = q
+    ? (drafts[q.key] ?? submission.answers[q.key] ?? emptyAnswer())
+    : emptyAnswer()
+  const save = async (nextStep: number) => {
+    if (!q) return false
+    const message = validate(q, answer)
     if (message) {
       setError(message)
-
       return false
     }
-
     setSaveState('saving')
     setError('')
-
     try {
-      const answerResult = await adapter.saveAnswer({
+      const result = await adapter.saveAnswer({
         submissionId: submission.submissionId,
-        questionKey: question.key,
+        questionKey: q.key,
         expectedRevision: submission.revision,
         mutationId: crypto.randomUUID(),
-        answer: currentAnswer,
+        answer,
       })
-
       const saved = await adapter.saveProgress({
         submissionId: submission.submissionId,
         currentStep: nextStep,
-        expectedRevision: answerResult.revision,
+        expectedRevision: result.revision,
       })
       setSubmission(saved)
+      setDrafts((all) => {
+        const next = { ...all }
+        delete next[q.key]
+        return next
+      })
       setSaveState('saved')
-
       return true
     } catch (reason) {
       if (
@@ -230,73 +206,88 @@ export const Assessment = ({
       ) {
         const latest = await adapter.getSubmission(submission.submissionId)
         setSubmission(latest)
-        setDraft(latest.answers[question.key] ?? draft)
-
+        setDrafts((all) => ({
+          ...all,
+          [q.key]: latest.answers[q.key] ?? answer,
+        }))
         setError(
           'This assessment changed in another tab. Your latest saved answer has been restored.'
         )
-      } else {
+      } else
         setError(
-          'We couldn’t save your answer. Your input is still here—please try again.'
+          'We couldn’t save your answer. Your input is still here—please retry.'
         )
-      }
-
       setSaveState('error')
-
       return false
     }
   }
-
-  const goNext = async () => {
-    const isLast = submission.currentStep === questionnaire.questions.length - 1
-
+  const next = async () => {
+    const last = submission.currentStep === questionnaire.questions.length - 1
     if (
-      await saveCurrent(
-        isLast ? submission.currentStep : submission.currentStep + 1
-      )
+      await save(last ? submission.currentStep : submission.currentStep + 1)
     ) {
-      setDraft(emptyAnswer())
-
-      if (isLast) {
+      if (returnToReview) {
+        setReturnToReview(false)
         setScreen('review')
-      }
+      } else if (last) setScreen('review')
     }
   }
-
   const submit = async () => {
     setSaveState('saving')
     setError('')
-
     try {
       const result = await adapter.submitSubmission({
         submissionId: submission.submissionId,
         expectedRevision: submission.revision,
         mutationId: crypto.randomUUID(),
       })
-
       setSubmission({
         ...submission,
         revision: result.revision,
         state: 'submitted',
       })
-
       setScreen('processing')
     } catch {
       setSaveState('error')
-
       setError(
-        'We couldn’t submit your assessment. Your answers are still saved—please try again.'
+        'We couldn’t submit your assessment. Your answers are still saved—please retry.'
       )
     }
   }
-
-  if (screen === 'processing') {
+  if (screen === 'resume')
     return (
-      <main className="narrow processing" aria-live="polite">
-        <div className="loader" />
-        <p className="eyebrow">Reviewing your answers</p>
+      <main className="assessment-shell assessment-center" data-theme="light">
+        <p className="assessment-wordmark">WORKFLOW CHECK</p>
+        <p className="assessment-eyebrow">Welcome back</p>
         <h1 ref={heading} tabIndex={-1}>
-          Looking for the clearest priorities…
+          Continue your assessment
+        </h1>
+        <p>
+          You have saved answers in {category?.label ?? 'this assessment'}.
+          Continue where you left off.
+        </p>
+        <button
+          className="assessment-button"
+          onClick={() => setScreen('question')}
+        >
+          Continue
+        </button>
+        <Link href="/" className="assessment-link">
+          Back to site
+        </Link>
+      </main>
+    )
+  if (screen === 'processing')
+    return (
+      <main
+        className="assessment-shell assessment-center"
+        data-theme="light"
+        aria-live="polite"
+      >
+        <span className="assessment-loader" aria-hidden="true" />
+        <p className="assessment-eyebrow">Reviewing your answers</p>
+        <h1 ref={heading} tabIndex={-1}>
+          Looking for the clearest priorities
         </h1>
         <p>
           We’re preparing your results. You can keep this page open while we
@@ -304,201 +295,214 @@ export const Assessment = ({
         </p>
       </main>
     )
-  }
-
-  if (screen === 'clarification' && submission.clarification) {
+  if (screen === 'clarification' && submission.clarification)
     return (
-      <main className="narrow question-page">
-        <p className="eyebrow">One extra step</p>
+      <main className="assessment-shell" data-theme="light">
+        <p className="assessment-wordmark">WORKFLOW CHECK</p>
+        <p className="assessment-eyebrow">One extra question</p>
         <h1 ref={heading} tabIndex={-1}>
           {submission.clarification.prompt}
         </h1>
-        <label className="sr-only" htmlFor="clarification-response">
-          {submission.clarification.prompt}
-        </label>
+        <label htmlFor="clarification-response">Your response</label>
         <textarea
           id="clarification-response"
-          rows={7}
           value={clarification}
-          onChange={(event) => setClarification(event.target.value)}
+          onChange={(e) => setClarification(e.target.value)}
         />
-        {error && <p className="error">{error}</p>}
-        <div className="question-actions">
+        {error && <p className="assessment-error">{error}</p>}
+        <div className="assessment-actions">
+          <span />
           <button
+            className="assessment-button"
             disabled={saveState === 'saving'}
             onClick={async () => {
               if (!clarification.trim()) {
                 setError('Please add a specific example before continuing.')
-
                 return
               }
-
               setSaveState('saving')
-
               try {
                 await adapter.submitClarification({
                   submissionId: submission.submissionId,
                   evaluationKey: submission.clarification!.evaluationKey,
                   response: clarification,
                 })
-
                 setSubmission({
                   ...submission,
                   state: 'processing',
                   clarification: null,
                 })
-
                 setScreen('processing')
               } catch {
                 setSaveState('error')
-
                 setError(
-                  'We couldn’t save that response. Your input is still here—please try again.'
+                  'We couldn’t save that response. Your input is still here—please retry.'
                 )
               }
             }}
           >
-            Continue analysis
+            {saveState === 'saving' ? 'Saving…' : 'Continue analysis'} →
           </button>
         </div>
       </main>
     )
-  }
-
-  if (screen === 'results' && report) {
+  if (screen === 'results' && report)
     return (
       <ResultsView report={report} submissionId={submission.submissionId} />
     )
-  }
-
-  if (screen === 'review') {
+  if (screen === 'review')
     return (
-      <main className="wide review">
-        <div className="review-head">
-          <div>
-            <p className="eyebrow">Ready to review</p>
-            <h1 ref={heading} tabIndex={-1}>
-              Your answers
-            </h1>
-            <p>Check anything you want to change before submitting.</p>
-          </div>
-        </div>
+      <main className="assessment-shell assessment-review" data-theme="light">
+        <p className="assessment-wordmark">WORKFLOW CHECK</p>
+        <p className="assessment-eyebrow">Ready to review</p>
+        <h1 ref={heading} tabIndex={-1}>
+          Your answers
+        </h1>
+        <p>Check anything you want to change before submitting.</p>
         {questionnaire.categories.map((group) => (
-          <section className="review-group" key={group.key}>
+          <section className="assessment-review-group" key={group.key}>
             <h2>{group.label}</h2>
             {questionnaire.questions
               .filter((item) => item.categoryKey === group.key)
               .map((item) => (
                 <article key={item.key}>
                   <div>
-                    <span>Q{item.number}</span>
+                    <p className="assessment-meta">Question {item.number}</p>
                     <h3>{item.prompt}</h3>
-                    <p>
-                      {submission.answers[item.key]?.state === 'answered'
-                        ? 'Answered'
-                        : 'Skipped'}
-                    </p>
+                    <p>{summary(item, submission.answers[item.key])}</p>
                   </div>
                   <button
-                    className="text-button"
+                    className="assessment-text-button"
+                    aria-label={`Edit question ${item.number}: ${item.prompt}`}
                     onClick={() => {
                       setSubmission({
                         ...submission,
                         currentStep: item.number - 1,
                       })
-
-                      setDraft(submission.answers[item.key] ?? emptyAnswer())
+                      setReturnToReview(true)
                       setScreen('question')
                     }}
                   >
-                    Edit<span className="sr-only"> question {item.number}</span>
+                    Edit
                   </button>
                 </article>
               ))}
           </section>
         ))}
-        {error && <p className="error">{error}</p>}
-        <div className="submit-bar">
+        {error && <p className="assessment-error">{error}</p>}
+        <div className="assessment-submit">
           <div>
             <strong>Ready for your workflow check?</strong>
             <span>Your results do not require an email.</span>
           </div>
-          <button disabled={saveState === 'saving'} onClick={submit}>
-            See my results
+          <button
+            className="assessment-button"
+            disabled={saveState === 'saving'}
+            onClick={() => void submit()}
+          >
+            See my results →
           </button>
         </div>
       </main>
     )
-  }
-
-  if (!question) {
+  if (!q)
     return (
-      <main className="narrow center">
+      <main className="assessment-shell assessment-center" data-theme="light">
         <h1>Assessment complete</h1>
       </main>
     )
-  }
-
   return (
-    <main className="narrow question-page">
-      <div className="progress-row">
-        <span>{category?.label}</span>
-        <span>
-          Question {question.number} of {questionnaire.questions.length}
+    <main className="assessment-shell" data-theme="light">
+      <header className="assessment-header">
+        <span className="assessment-wordmark">WORKFLOW CHECK</span>
+        <span className="assessment-meta">
+          Question {q.number} of {questionnaire.questions.length}
         </span>
-      </div>
-      <div className="progress-track">
+      </header>
+      <div
+        className="assessment-progress"
+        role="progressbar"
+        aria-label={`Question ${q.number} of ${questionnaire.questions.length}`}
+        aria-valuenow={q.number}
+        aria-valuemin={1}
+        aria-valuemax={questionnaire.questions.length}
+      >
         <span
           style={{
-            width: `${(question.number / questionnaire.questions.length) * 100}%`,
+            width: `${(q.number / questionnaire.questions.length) * 100}%`,
           }}
         />
       </div>
-      <p className="eyebrow">{question.required ? 'Required' : 'Optional'}</p>
+      <p className="assessment-eyebrow">{category?.label}</p>
       <h1 ref={heading} tabIndex={-1}>
-        {question.prompt}
+        {q.prompt}
       </h1>
-      {question.instructions && (
-        <p className="question-help">{question.instructions}</p>
-      )}
+      <p className="assessment-help">
+        {q.instructions ??
+          (q.required
+            ? 'Required question'
+            : 'Optional — you may skip this question.')}
+      </p>
       <QuestionField
-        question={question}
-        value={currentAnswer}
+        question={q}
+        value={answer}
         onChange={(value) => {
-          setDraft(value)
+          setDrafts((all) => ({ ...all, [q.key]: value }))
           setError('')
           setSaveState('idle')
         }}
         error={error}
       />
-      <div className="question-actions">
-        <button
-          className="secondary"
-          disabled={submission.currentStep === 0}
-          onClick={() => {
-            setSubmission({
-              ...submission,
-              currentStep: Math.max(0, submission.currentStep - 1),
-            })
-
-            setDraft(emptyAnswer())
-          }}
-        >
-          Back
-        </button>
-        <div className={`save-state ${saveState}`} aria-live="polite">
+      <div className="assessment-actions">
+        {submission.currentStep > 0 ? (
+          <button
+            className="assessment-button assessment-secondary"
+            onClick={() => {
+              setSubmission({
+                ...submission,
+                currentStep: submission.currentStep - 1,
+              })
+              setError('')
+            }}
+          >
+            ← Back
+          </button>
+        ) : (
+          <span />
+        )}
+        <div className={`assessment-save ${saveState}`} aria-live="polite">
           {saveState === 'saving'
             ? 'Saving…'
             : saveState === 'saved'
               ? 'Saved'
-              : ''}
+              : saveState === 'error'
+                ? 'Couldn’t save. Retry.'
+                : ''}
         </div>
-        <button disabled={saveState === 'saving'} onClick={goNext}>
-          {question.number === questionnaire.questions.length
-            ? 'Review answers'
-            : 'Next'}
+        <button
+          className="assessment-button"
+          disabled={saveState === 'saving'}
+          onClick={() => void next()}
+        >
+          {returnToReview
+            ? 'Save and return to review'
+            : q.number === questionnaire.questions.length
+              ? 'Review answers'
+              : 'Next'}{' '}
+          →
         </button>
       </div>
+      {returnToReview && (
+        <button
+          className="assessment-text-button"
+          onClick={() => {
+            setReturnToReview(false)
+            setScreen('review')
+          }}
+        >
+          Cancel edit
+        </button>
+      )}
     </main>
   )
 }

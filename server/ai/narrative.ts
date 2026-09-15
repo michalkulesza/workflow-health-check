@@ -2,6 +2,7 @@ import { GoogleGenAI } from '@google/genai'
 import { z } from 'zod'
 
 import { createTestNarrativeProvider } from './testHarness'
+import type { ProviderUsage } from './gemini'
 
 const narrativePrioritySchema = z.object({
   categoryKey: z.string().min(1).max(128),
@@ -25,6 +26,11 @@ export const narrativeOutputSchema = z.object({
 
 export type NarrativeOutput = z.infer<typeof narrativeOutputSchema>
 
+export type NarrativeResult = {
+  output: NarrativeOutput
+  usage: ProviderUsage | null
+}
+
 export interface NarrativeProvider {
   narrate(input: {
     categories: {
@@ -34,7 +40,32 @@ export interface NarrativeProvider {
       maxPoints: number
     }[]
     answers: { questionKey: string; answer: string }[]
-  }): Promise<NarrativeOutput>
+  }): Promise<NarrativeOutput | NarrativeResult>
+}
+
+const numericUsageValue = (value: unknown): number | null =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+    ? value
+    : null
+
+const usageFromResponse = (response: {
+  usageMetadata?: unknown
+}): ProviderUsage | null => {
+  const usage = response.usageMetadata
+
+  if (!usage || typeof usage !== 'object') {
+    return null
+  }
+
+  const values = usage as Record<string, unknown>
+
+  return {
+    cachedContentTokens: numericUsageValue(values.cachedContentTokenCount),
+    outputTokens: numericUsageValue(values.candidatesTokenCount),
+    promptTokens: numericUsageValue(values.promptTokenCount),
+    reasoningTokens: numericUsageValue(values.thoughtsTokenCount),
+    totalTokens: numericUsageValue(values.totalTokenCount),
+  }
 }
 
 export const createNarrativeProvider = (
@@ -107,7 +138,10 @@ export const createNarrativeProvider = (
         },
       })
 
-      return narrativeOutputSchema.parse(JSON.parse(response.text ?? ''))
+      return {
+        output: narrativeOutputSchema.parse(JSON.parse(response.text ?? '')),
+        usage: usageFromResponse(response),
+      }
     },
   }
 }

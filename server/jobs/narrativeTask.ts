@@ -3,10 +3,18 @@ import type { Payload, TaskConfig } from 'payload'
 import { answerValueSchema, reportSchema } from '@/lib/assessment/contracts'
 import {
   createNarrativeProvider,
+  type NarrativeOutput,
   type NarrativeProvider,
 } from '@/server/ai/narrative'
+import type { ProviderUsage } from '@/server/ai/gemini'
 import { questionnaireDefinitionSchema } from '@/server/content/definition'
 import { enqueueReportNotificationDeliveries } from '@/server/notifications/delivery'
+
+const narrativeResult = (
+  value:
+    NarrativeOutput | { output: NarrativeOutput; usage: ProviderUsage | null }
+): { output: NarrativeOutput; usage: ProviderUsage | null } =>
+  'output' in value ? value : { output: value, usage: null }
 
 const answerText = (answer: ReturnType<typeof answerValueSchema.parse>) =>
   answer.state === 'answered'
@@ -88,13 +96,16 @@ export const runNarrative = async ({
         )
     )
 
-    const output = await provider.narrate({
-      categories,
-      answers: [...permitted].map(([questionKey, answer]) => ({
-        questionKey,
-        answer,
-      })),
-    })
+    const result = narrativeResult(
+      await provider.narrate({
+        categories,
+        answers: [...permitted].map(([questionKey, answer]) => ({
+          questionKey,
+          answer,
+        })),
+      })
+    )
+    const { output, usage } = result
 
     const categoryKeys = new Set(
       categories.map((category) => category.categoryKey)
@@ -143,8 +154,8 @@ export const runNarrative = async ({
     })
 
     await client.query(
-      `UPDATE scoring_runs SET state = 'complete', report = $2::jsonb, updated_at = now() WHERE id = $1`,
-      [runID, JSON.stringify(report)]
+      `UPDATE scoring_runs SET state = 'complete', report = $2::jsonb, narrative_usage = $3::jsonb, updated_at = now() WHERE id = $1`,
+      [runID, JSON.stringify(report), usage ? JSON.stringify(usage) : null]
     )
 
     await client.query(

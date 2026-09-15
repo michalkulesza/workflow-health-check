@@ -62,5 +62,6 @@ export const ScoringRuns: CollectionConfig = {
       admin: { readOnly: true },
     },
     { name: 'report', type: 'json', admin: { readOnly: true } },
+    { name: 'narrativeUsage', type: 'json', admin: { readOnly: true } },
   ],
 }

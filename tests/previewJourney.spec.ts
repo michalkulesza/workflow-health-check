@@ -153,7 +153,7 @@ test.describe('configured preview assessment journey', () => {
   }) => {
     test.skip(
       !shouldRunClarification,
-      'Set RUN_PREVIEW_CLARIFICATION=true with the isolated clarification transport.'
+      'Set RUN_PREVIEW_CLARIFICATION=true when the preview provider requests clarification.'
     )
     test.setTimeout(300_000)
     await completeJourney({

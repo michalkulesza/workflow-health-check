@@ -364,6 +364,15 @@ export interface ScoringRun {
     | number
     | boolean
     | null;
+  narrativeUsage?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -840,6 +849,7 @@ export interface ScoringRunsSelect<T extends boolean = true> {
   definitionSnapshot?: T;
   engineVersion?: T;
   report?: T;
+  narrativeUsage?: T;
   updatedAt?: T;
   createdAt?: T;
 }

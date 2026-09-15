@@ -17,6 +17,7 @@ type Session = { cookie: string; csrfToken: string }
 type Journey = { session: Session; submissionID: string; versionID: string }
 
 let payload: Payload
+let draftVersionID: number
 let questionnaireID: string
 let versionID: string
 
@@ -73,14 +74,16 @@ const createSession = async (): Promise<Session> => {
   return { cookie: `assessment_session=${token}`, csrfToken: body.csrfToken }
 }
 
-const createJourney = async (): Promise<Journey> => {
+const createJourney = async (
+  displayedVersionID = versionID
+): Promise<Journey> => {
   const session = await createSession()
   const { POST } =
     await import('@/app/(frontend)/api/assessment/v1/submissions/route')
   const response = await POST(
     request('/api/assessment/v1/submissions', {
       body: JSON.stringify({
-        displayedVersionId: versionID,
+        displayedVersionId: displayedVersionID,
         questionnaireId: questionnaireID,
       }),
       headers: { cookie: session.cookie, origin: ORIGIN },
@@ -91,7 +94,11 @@ const createJourney = async (): Promise<Journey> => {
   expect(response.status).toBe(201)
   const body = (await response.json()) as { submissionId: string }
 
-  return { session, submissionID: body.submissionId, versionID }
+  return {
+    session,
+    submissionID: body.submissionId,
+    versionID: displayedVersionID,
+  }
 }
 
 const answers = [
@@ -102,12 +109,42 @@ const answers = [
   ['q5', ['head'], null],
   ['q6', ['depends'], null],
   ['q7', ['forget'], null],
-  ['q8', ['unclear', 'follow-up', 'forget', 'lost', 'repeat', 'version', 'deadlines'], null],
-  ['q9', ['admin-0', 'admin-1', 'admin-2', 'admin-3', 'admin-4', 'admin-5', 'admin-6', 'admin-7', 'admin-8'], null],
+  [
+    'q8',
+    [
+      'unclear',
+      'follow-up',
+      'forget',
+      'lost',
+      'repeat',
+      'version',
+      'deadlines',
+    ],
+    null,
+  ],
+  [
+    'q9',
+    [
+      'admin-0',
+      'admin-1',
+      'admin-2',
+      'admin-3',
+      'admin-4',
+      'admin-5',
+      'admin-6',
+      'admin-7',
+      'admin-8',
+    ],
+    null,
+  ],
   ['q10', ['react'], null],
   ['q11', [], fixtureText],
   ['q12', [], 'I copy the same project updates into several tools each week.'],
-  ['q13', [], 'A deadline changed without a shared record, so I reconstructed the plan from messages.'],
+  [
+    'q13',
+    [],
+    'A deadline changed without a shared record, so I reconstructed the plan from messages.',
+  ],
   ['q14', [], 'I would delegate follow-up reminders.'],
   ['q15', [], 'I need one reliable project-status system.'],
   ['q16', ['time-4'], null],
@@ -215,6 +252,7 @@ beforeAll(async () => {
   })
 
   versionID = String(published.publishedVersionID)
+  draftVersionID = published.draftVersionID
 })
 
 afterAll(async () => {
@@ -251,7 +289,10 @@ describe('complete 16-question assessment journey', () => {
     expect(result.rows[0]).toMatchObject({
       answer_snapshot: { q11: { text: fixtureText } },
       questionnaire_version_id: Number(journey.versionID),
-      report: { priorities: [{ categoryKey: 'project' }, { categoryKey: 'people' }], status: 'complete' },
+      report: {
+        priorities: [{ categoryKey: 'project' }, { categoryKey: 'people' }],
+        status: 'complete',
+      },
       run_id: Number(submitted.runId),
       state: 'complete',
     })
@@ -275,7 +316,10 @@ describe('complete 16-question assessment journey', () => {
     expect(scoreByCategory.project).toMatchObject({ normalized: 0, points: 0 })
     expect(scoreByCategory.people?.normalized).toBeCloseTo(1 / 22)
     expect(scoreByCategory.admin).toMatchObject({ normalized: 0.05, points: 1 })
-    expect(scoreByCategory.friction).toMatchObject({ normalized: 0.25, points: 5 })
+    expect(scoreByCategory.friction).toMatchObject({
+      normalized: 0.25,
+      points: 5,
+    })
 
     const { GET: getReport } =
       await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/report/route')
@@ -350,7 +394,10 @@ describe('complete 16-question assessment journey', () => {
     await payload.update({
       collection: 'leads',
       id: leadID,
-      data: { notes: 'Verified by the Step 6 integration journey.', stage: 'contacted' },
+      data: {
+        notes: 'Verified by the Step 6 integration journey.',
+        stage: 'contacted',
+      },
       overrideAccess: true,
     })
     const updatedLead = await payload.findByID({
@@ -420,7 +467,8 @@ describe('complete 16-question assessment journey', () => {
     expect(evaluation.rows).toHaveLength(1)
     expect(evaluation.rows[0]).toMatchObject({
       attempts: '2',
-      clarification_response: 'I now record approvals in one shared project tracker.',
+      clarification_response:
+        'I now record approvals in one shared project tracker.',
       state: 'complete',
     })
   })
@@ -609,6 +657,120 @@ describe('complete 16-question assessment journey', () => {
         state: 'partial',
         total_tried: '1',
       }),
+    ])
+  })
+
+  it('pins an in-progress submission to its original publication after a review edit', async () => {
+    const originalJourney = await createJourney()
+    const initialRevision = await saveAllAnswers(originalJourney)
+    const originalDraft = await payload.findByID({
+      collection: 'questionnaire-versions',
+      id: draftVersionID,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const originalQuestion = originalDraft.questions?.find(
+      (question) => question.key === 'q11'
+    )
+
+    if (!originalQuestion) {
+      throw new Error('Foundation draft has no q11 question')
+    }
+
+    await payload.update({
+      collection: 'questionnaire-versions',
+      id: draftVersionID,
+      data: {
+        questions: originalDraft.questions?.map((question) =>
+          question.key === 'q11'
+            ? { ...question, prompt: `${question.prompt} (version two)` }
+            : question
+        ),
+      },
+      overrideAccess: true,
+    })
+    const questionnaireResult = await payload.find({
+      collection: 'questionnaires',
+      where: { publicId: { equals: questionnaireID } },
+      limit: 1,
+      overrideAccess: true,
+    })
+    const currentQuestionnaireID = questionnaireResult.docs[0]?.id
+
+    if (!currentQuestionnaireID) {
+      throw new Error('Foundation questionnaire was not found')
+    }
+
+    const published = await publishQuestionnaire({
+      payload,
+      questionnaireID: Number(currentQuestionnaireID),
+      draftVersionID,
+    })
+
+    const { PUT: saveAnswer } =
+      await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/answers/[questionKey]/route')
+    const revisedText =
+      'I now keep approvals in one shared project-status record.'
+    const saved = await saveAnswer(
+      request(
+        `/api/assessment/v1/submissions/${originalJourney.submissionID}/answers/q11`,
+        {
+          body: JSON.stringify({
+            answer: {
+              state: 'answered',
+              selectedOptionKeys: [],
+              text: revisedText,
+              optionText: {},
+            },
+            expectedRevision: initialRevision,
+            mutationId: randomUUID(),
+            questionKey: 'q11',
+            submissionId: originalJourney.submissionID,
+          }),
+          headers: {
+            cookie: originalJourney.session.cookie,
+            origin: ORIGIN,
+            'x-assessment-csrf': originalJourney.session.csrfToken,
+          },
+          method: 'PUT',
+        }
+      ),
+      {
+        params: Promise.resolve({
+          id: originalJourney.submissionID,
+          questionKey: 'q11',
+        }),
+      }
+    )
+    expect(saved.status).toBe(200)
+    const submitted = await submitJourney(originalJourney, initialRevision + 1)
+
+    const pinned = await payload.db.pool.query<{
+      answer_snapshot: { q11: { text: string } }
+      definition_snapshot: { questions: { key: string; prompt: string }[] }
+      questionnaire_version_id: number
+    }>(
+      'SELECT answer_snapshot, definition_snapshot, questionnaire_version_id FROM scoring_runs WHERE id = $1',
+      [submitted.runId]
+    )
+    expect(pinned.rows).toHaveLength(1)
+    expect(pinned.rows[0]?.answer_snapshot.q11.text).toBe(revisedText)
+    expect(pinned.rows[0]?.questionnaire_version_id).toBe(Number(versionID))
+    expect(
+      pinned.rows[0]?.definition_snapshot.questions.find(
+        (question) => question.key === 'q11'
+      )?.prompt
+    ).toBe(originalQuestion.prompt)
+
+    const newJourney = await createJourney(String(published.publishedVersionID))
+    const newSubmission = await payload.db.pool.query<{
+      questionnaire_version_id: number
+    }>(
+      'SELECT questionnaire_version_id FROM submissions WHERE external_id = $1',
+      [newJourney.submissionID]
+    )
+    expect(newSubmission.rows).toEqual([
+      { questionnaire_version_id: published.publishedVersionID },
     ])
   })
 })

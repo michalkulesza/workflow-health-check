@@ -72,14 +72,23 @@ describe('AI evaluation worker', () => {
     const release = vi.fn()
 
     const evaluate = vi.fn(async () => ({
-      level: 2 as const,
-      score: 0.25,
-      confidence: 0.8,
-      themes: ['messages'],
-      explanation: 'Changes are lost in messages.',
-      insufficientInformation: false,
-      evidence: [{ questionKey: 'q11', excerpt: 'lose changes' }],
-      followUpQuestion: null,
+      output: {
+        level: 2 as const,
+        score: 0.25,
+        confidence: 0.8,
+        themes: ['messages'],
+        explanation: 'Changes are lost in messages.',
+        insufficientInformation: false,
+        evidence: [{ questionKey: 'q11', excerpt: 'lose changes' }],
+        followUpQuestion: null,
+      },
+      usage: {
+        cachedContentTokens: null,
+        outputTokens: 8,
+        promptTokens: 12,
+        reasoningTokens: null,
+        totalTokens: 20,
+      },
     }))
 
     const payload = {
@@ -99,7 +108,12 @@ describe('AI evaluation worker', () => {
 
     expect(query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO scoring_ai_evaluations'),
-      expect.arrayContaining([7, 'friction-rubric', 'complete'])
+      expect.arrayContaining([
+        7,
+        'friction-rubric',
+        'complete',
+        expect.stringContaining('"totalTokens":20'),
+      ])
     )
 
     expect(release).toHaveBeenCalledOnce()

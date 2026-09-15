@@ -22,6 +22,7 @@ export const ContactStep = ({
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
   const idempotencyKey = useRef(crypto.randomUUID())
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -45,7 +46,7 @@ export const ContactStep = ({
         idempotencyKey: idempotencyKey.current,
       })
 
-      onComplete()
+      setIsComplete(true)
     } catch (reason) {
       if (
         reason instanceof AssessmentAdapterError &&
@@ -64,8 +65,25 @@ export const ContactStep = ({
     }
   }
 
+  if (isComplete) {
+    return (
+      <main className="assessment-shell assessment-center" data-theme="light">
+        <p className="assessment-eyebrow">Request sent</p>
+        <h1>Your request has been sent</h1>
+        <p>We’ve saved your details with this workflow assessment.</p>
+        <button
+          className="assessment-button"
+          type="button"
+          onClick={onComplete}
+        >
+          Back to results
+        </button>
+      </main>
+    )
+  }
+
   return (
-    <main className="contact-step narrow">
+    <main className="assessment-shell contact-step" data-theme="light">
       <button className="text-button back-link" type="button" onClick={onBack}>
         ← Back to results
       </button>

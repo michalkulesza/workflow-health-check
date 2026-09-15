@@ -18,9 +18,7 @@ export const QuestionField = ({
   if (question.type === 'text') {
     return (
       <>
-        <label className="sr-only" htmlFor={`${question.key}-text`}>
-          {question.prompt}
-        </label>
+        <label htmlFor={`${question.key}-text`}>Your answer</label>
         <textarea
           id={`${question.key}-text`}
           rows={7}
@@ -34,6 +32,7 @@ export const QuestionField = ({
             })
           }
           aria-describedby={error ? `${question.key}-error` : undefined}
+          aria-invalid={Boolean(error)}
           placeholder="Share as much detail as feels useful…"
         />
         {error && (
@@ -47,6 +46,9 @@ export const QuestionField = ({
 
   const selected = value.state === 'answered' ? value.selectedOptionKeys : []
   const optionText = value.state === 'answered' ? value.optionText : {}
+  const atLimit = Boolean(
+    question.maxSelections && selected.length >= question.maxSelections
+  )
 
   const toggle = (key: string, exclusive: boolean) => {
     const next =
@@ -80,8 +82,22 @@ export const QuestionField = ({
   }
 
   return (
-    <fieldset aria-describedby={error ? `${question.key}-error` : undefined}>
+    <fieldset
+      aria-describedby={
+        error
+          ? `${question.key}-error`
+          : question.maxSelections
+            ? `${question.key}-selection-help`
+            : undefined
+      }
+    >
       <legend className="sr-only">{question.prompt}</legend>
+      {question.maxSelections && (
+        <p className="assessment-help" id={`${question.key}-selection-help`}>
+          You can choose up to {question.maxSelections} options.
+          {atLimit ? ' Remove a selection to choose another.' : ''}
+        </p>
+      )}
       <div className="options">
         {question.options.map((option) => {
           const checked = selected.includes(option.key)
@@ -106,6 +122,7 @@ export const QuestionField = ({
                   <input
                     id={`${question.key}-${option.key}`}
                     value={optionText[option.key] ?? ''}
+                    aria-invalid={Boolean(error)}
                     onChange={(event) =>
                       onChange({
                         state: 'answered',

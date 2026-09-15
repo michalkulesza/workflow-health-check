@@ -1,7 +1,12 @@
 import type { Payload, TaskConfig } from 'payload'
 
 import { answerValueSchema, reportSchema } from '@/lib/assessment/contracts'
-import { createGeminiProvider, type GeminiProvider } from '@/server/ai/gemini'
+import {
+  createGeminiProvider,
+  type AIEvaluationOutput,
+  type GeminiProvider,
+  type ProviderUsage,
+} from '@/server/ai/gemini'
 import {
   type QuestionnaireDefinition,
   questionnaireDefinitionSchema,
@@ -35,6 +40,13 @@ const validateEvidence = (
   )
 
 const MAX_PROVIDER_ATTEMPTS = 3
+
+const providerOutput = (
+  value:
+    | AIEvaluationOutput
+    | { output: AIEvaluationOutput; usage: ProviderUsage | null }
+): { output: AIEvaluationOutput; usage: ProviderUsage | null } =>
+  'output' in value ? value : { output: value, usage: null }
 
 export const runAIEvaluation = async ({
   outboxID,
@@ -131,12 +143,15 @@ export const runAIEvaluation = async ({
           prompt: questions.get(questionKey)?.prompt ?? questionKey,
         })),
       }
-      let output
+      let result: {
+        output: AIEvaluationOutput
+        usage: ProviderUsage | null
+      } | null = null
 
       try {
         for (let attempt = 1; attempt <= MAX_PROVIDER_ATTEMPTS; attempt += 1) {
           try {
-            output = await provider.evaluate(providerRequest)
+            result = providerOutput(await provider.evaluate(providerRequest))
             break
           } catch (error) {
             if (attempt === MAX_PROVIDER_ATTEMPTS) {
@@ -177,9 +192,11 @@ export const runAIEvaluation = async ({
         return
       }
 
-      if (!output) {
+      if (!result) {
         throw new Error('Provider retry loop completed without an output')
       }
+
+      const { output, usage } = result
 
       if (!validateEvidence(output.evidence, permitted)) {
         throw new Error(
@@ -193,10 +210,10 @@ export const runAIEvaluation = async ({
         !existing.rows[0]?.clarification_response
 
       await client.query(
-        `INSERT INTO scoring_ai_evaluations (scoring_run_id, evaluation_key, state, output, clarification_prompt, attempts, updated_at, created_at)
-         VALUES ($1, $2, $3, $4::jsonb, $5, 1, now(), now())
+        `INSERT INTO scoring_ai_evaluations (scoring_run_id, evaluation_key, state, output, provider_usage, clarification_prompt, attempts, updated_at, created_at)
+         VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, 1, now(), now())
          ON CONFLICT (scoring_run_id, evaluation_key) DO UPDATE SET state = EXCLUDED.state, output = EXCLUDED.output,
-           clarification_prompt = EXCLUDED.clarification_prompt, attempts = scoring_ai_evaluations.attempts + 1, updated_at = now()`,
+           provider_usage = EXCLUDED.provider_usage, clarification_prompt = EXCLUDED.clarification_prompt, attempts = scoring_ai_evaluations.attempts + 1, updated_at = now()`,
         [
           runID,
           evaluation.key,
@@ -206,6 +223,7 @@ export const runAIEvaluation = async ({
               ? 'insufficient'
               : 'complete',
           JSON.stringify(output),
+          usage ? JSON.stringify(usage) : null,
           needsClarification ? output.followUpQuestion : null,
         ]
       )

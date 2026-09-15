@@ -43,6 +43,19 @@ export const aiEvaluationOutputSchema = z
 
 export type AIEvaluationOutput = z.infer<typeof aiEvaluationOutputSchema>
 
+export type ProviderUsage = {
+  cachedContentTokens: number | null
+  outputTokens: number | null
+  promptTokens: number | null
+  reasoningTokens: number | null
+  totalTokens: number | null
+}
+
+export type GeminiEvaluationResult = {
+  output: AIEvaluationOutput
+  usage: ProviderUsage | null
+}
+
 export interface GeminiEvaluationRequest {
   model: string
   promptVersion: string
@@ -52,7 +65,34 @@ export interface GeminiEvaluationRequest {
 }
 
 export interface GeminiProvider {
-  evaluate(request: GeminiEvaluationRequest): Promise<AIEvaluationOutput>
+  evaluate(
+    request: GeminiEvaluationRequest
+  ): Promise<AIEvaluationOutput | GeminiEvaluationResult>
+}
+
+const numericUsageValue = (value: unknown): number | null =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+    ? value
+    : null
+
+const usageFromResponse = (response: {
+  usageMetadata?: unknown
+}): ProviderUsage | null => {
+  const usage = response.usageMetadata
+
+  if (!usage || typeof usage !== 'object') {
+    return null
+  }
+
+  const values = usage as Record<string, unknown>
+
+  return {
+    cachedContentTokens: numericUsageValue(values.cachedContentTokenCount),
+    outputTokens: numericUsageValue(values.candidatesTokenCount),
+    promptTokens: numericUsageValue(values.promptTokenCount),
+    reasoningTokens: numericUsageValue(values.thoughtsTokenCount),
+    totalTokens: numericUsageValue(values.totalTokenCount),
+  }
 }
 
 const responseSchema = {
@@ -131,7 +171,10 @@ export const createGeminiProvider = (
         },
       })
 
-      return aiEvaluationOutputSchema.parse(JSON.parse(response.text ?? ''))
+      return {
+        output: aiEvaluationOutputSchema.parse(JSON.parse(response.text ?? '')),
+        usage: usageFromResponse(response),
+      }
     },
   }
 }

@@ -61,7 +61,7 @@ export const ResultsView = ({
   }
 
   return (
-    <main className="results narrow">
+    <main className="results" data-theme="light">
       <p className="eyebrow">Your workflow check</p>
       <h1>
         {report.priorities.length
@@ -110,7 +110,7 @@ export const ResultsView = ({
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />
-              <button disabled={isSending}>
+              <button className="assessment-button" disabled={isSending}>
                 {isSending ? 'Saving…' : 'Notify me when ready'}
               </button>
             </div>
@@ -136,7 +136,12 @@ export const ResultsView = ({
             If you’d like support turning these findings into a practical
             change, send a note. This is optional.
           </p>
-          <button onClick={() => setIsContactOpen(true)}>Request help</button>
+          <button
+            className="assessment-button"
+            onClick={() => setIsContactOpen(true)}
+          >
+            Request help
+          </button>
         </section>
       )}
     </main>

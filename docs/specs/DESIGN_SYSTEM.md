@@ -20,7 +20,7 @@ The reference wordmark reads “LEAFWORKS”; the current product is named “Wo
 
 ## 2. Color tokens
 
-Use semantic tokens in components. Hex values are the initial light-theme standard; no dark theme is defined yet.
+Use semantic tokens in components. Hex values are the initial light-theme standard; no dark theme is defined yet. Future dark mode is an explicit requirement for token architecture: keep surface, text, action, selection, status, shadow, and decoration semantics separate and provide a theme override boundary. Components must not embed light-specific color literals. Implementing a dark palette, system-preference switching, or a theme toggle is a separate task. See [the form redesign handoff](FORM_REDESIGN_HANDOFF.md) for the first scoped adoption.
 
 | Token | Value | Purpose |
 | --- | --- | --- |
