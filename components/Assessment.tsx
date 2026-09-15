@@ -69,7 +69,10 @@ export const Assessment = ({
   const [report, setReport] = useState<Report | null>(null)
   const [clarification, setClarification] = useState('')
   const [returnToReview, setReturnToReview] = useState(false)
+  const [pollingError, setPollingError] = useState('')
+  const [pollingRetry, setPollingRetry] = useState(0)
   const heading = useRef<HTMLHeadingElement>(null)
+  const polling = useRef(false)
   const initialise = async () => {
     setError('')
     try {
@@ -117,26 +120,41 @@ export const Assessment = ({
       )
     )
       return
+    let active = true
     const refresh = async () => {
-      const next = await adapter.getReport(submission.submissionId)
-      if (next.status === 'pending') {
-        const current = await adapter.getSubmission(submission.submissionId)
-        if (current.state === 'awaiting_clarification') {
-          setSubmission(current)
-          setScreen('clarification')
-          return
+      if (polling.current) return
+      polling.current = true
+      try {
+        const next = await adapter.getReport(submission.submissionId)
+        if (!active) return
+        setPollingError('')
+        if (next.status === 'pending') {
+          const current = await adapter.getSubmission(submission.submissionId)
+          if (active && current.state === 'awaiting_clarification') {
+            setSubmission(current)
+            setScreen('clarification')
+            return
+          }
         }
+        setReport(next)
+        setScreen('results')
+      } catch {
+        if (active) {
+          setPollingError(
+            'Results are temporarily unavailable. Your assessment is saved; please try again.'
+          )
+        }
+      } finally {
+        polling.current = false
       }
-      setReport(next)
-      setScreen('results')
     }
-    void refresh().catch(() => undefined)
-    const timer = window.setInterval(
-      () => void refresh().catch(() => undefined),
-      3000
-    )
-    return () => window.clearInterval(timer)
-  }, [submission])
+    void refresh()
+    const timer = window.setInterval(() => void refresh(), 3000)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [pollingRetry, submission])
   if (error && !questionnaire)
     return (
       <main className="assessment-shell assessment-center" data-theme="light">
@@ -293,6 +311,17 @@ export const Assessment = ({
           We’re preparing your results. You can keep this page open while we
           finish.
         </p>
+        {pollingError && (
+          <>
+            <p className="assessment-error">{pollingError}</p>
+            <button
+              className="assessment-button"
+              onClick={() => setPollingRetry((value) => value + 1)}
+            >
+              Retry now
+            </button>
+          </>
+        )}
       </main>
     )
   if (screen === 'clarification' && submission.clarification)

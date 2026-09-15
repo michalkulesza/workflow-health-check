@@ -1,10 +1,13 @@
 import { getPayload } from 'payload'
 
 import config from '@/payload.config'
-import { assessmentError } from '@/server/assessment/response'
+import {
+  assessmentError,
+  withAssessmentErrorBoundary,
+} from '@/server/assessment/response'
 import { relationID, toPublicLanding } from '@/server/content/publicProjection'
 
-export const GET = async () => {
+export const GET = withAssessmentErrorBoundary('/landing', async () => {
   const payload = await getPayload({ config })
 
   const landing = await payload.findGlobal({
@@ -33,4 +36,4 @@ export const GET = async () => {
       },
     }
   )
-}
+})

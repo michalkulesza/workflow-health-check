@@ -137,14 +137,14 @@ The original failure is understood, produces controlled service errors without a
 
 | Item | Evidence |
 | --- | --- |
-| Baseline revision/versions and preserved edits | Pending |
-| Sanitized credential/target diagnosis | Pending |
-| Adapter mechanism and reproduction before/after | Pending |
-| Route/parser/transaction coverage | Pending |
-| Client/private-grant recovery checks | Pending |
-| CLI/worker and preview failure/recovery evidence | Pending |
-| Verification commands, exit codes and counts | Pending |
-| Remaining limitations | Pending |
+| Baseline revision/versions and preserved edits | Working tree was already extensively modified across form, backend, tests, config, and formatting. `@payloadcms/db-postgres` 3.89.0, Payload 3.89.0, and Next 16.3.4 were recorded from `package.json`; no credentials, Compose settings, or volumes were changed. |
+| Sanitized credential/target diagnosis | Not run: no safe, owner-authorized disposable database target was available. The reported authentication failure remains an operator configuration issue separate from this code repair. |
+| Adapter mechanism and reproduction before/after | Added `observedPostgresAdapter`, which attaches a rejection observer to each adapter instance's `initializing` promise and preserves that original promise for legitimate awaiters. No global rejection listener is installed. The isolated real-adapter subprocess regression remains required against a disposable fake pool. |
+| Route/parser/transaction coverage | All 15 custom assessment routes now use the shared boundary. Eight body readers use `parseAssessmentJson`; malformed bodies return a no-store `bad_request`, while application `SyntaxError`s remain 500s. Contact rollback no longer masks its original failure. |
+| Client/private-grant recovery checks | Assessment polling has an in-flight guard, stale-update guard, visible availability state, and Retry control. Private-report 5xx/network failures are distinct from invalid access and retry the current report after a successful exchange without re-exchanging the token. Browser-level regression coverage remains required. |
+| CLI/worker and preview failure/recovery evidence | Not run: no disposable database/preview was started, so this work did not disrupt an active preview. The shared Payload configuration applies the initialization observer to web, admin, CLI, and worker creation. |
+| Verification commands, exit codes and counts | `npm test -- --run server/assessment/response.test.ts` exit 0: 1 file, 3 tests passed. `npm run typecheck` exit 0. Focused lint for new shared files exit 0. Repository `format:check` remains nonzero solely for pre-existing `payload-types.ts`; full lint remains nonzero for concurrent existing formatting-rule violations. |
+| Remaining limitations | Full endpoint/database failure matrix, actual adapter child-process reproduction, CLI/worker startup, and browser/runtime preview checks require an isolated disposable PostgreSQL environment and remain outstanding. Keep this handoff active until those checks pass. |
 
 Keep this document active until required acceptance passes, then move it to `docs/specs/done/`. Update operation instructions with the supported recovery procedure. No deployment, credential rotation, volume deletion, or live provider traffic is authorized by this plan alone.
 

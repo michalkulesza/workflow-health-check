@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { reportSchema, type Report } from '@/lib/assessment/contracts'
 
@@ -9,24 +9,34 @@ import { ResultsView } from './ResultsView'
 export const PrivateReport = ({ token }: { token: string }) => {
   const [report, setReport] = useState<Report | null>(null)
   const [error, setError] = useState('')
+  const [retry, setRetry] = useState(0)
+  const exchangeAttempted = useRef(false)
+
+  useEffect(() => {
+    exchangeAttempted.current = false
+  }, [token])
 
   useEffect(() => {
     let active = true
 
     void (async () => {
       try {
-        const exchange = await fetch(
-          '/api/assessment/v1/report-grants/exchange',
-          {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ token }),
-          }
-        )
+        setError('')
+        if (!exchangeAttempted.current) {
+          exchangeAttempted.current = true
+          const exchange = await fetch(
+            '/api/assessment/v1/report-grants/exchange',
+            {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ token }),
+            }
+          )
 
-        if (!exchange.ok) {
-          throw new Error('exchange')
+          if (!exchange.ok) {
+            throw new Error(exchange.status >= 500 ? 'temporary' : 'invalid')
+          }
         }
 
         const response = await fetch(
@@ -35,7 +45,7 @@ export const PrivateReport = ({ token }: { token: string }) => {
         )
 
         if (!response.ok) {
-          throw new Error('report')
+          throw new Error(response.status >= 500 ? 'temporary' : 'invalid')
         }
 
         const content = reportSchema.parse(await response.json())
@@ -43,9 +53,13 @@ export const PrivateReport = ({ token }: { token: string }) => {
         if (active) {
           setReport(content)
         }
-      } catch {
+      } catch (reason) {
         if (active) {
-          setError('This link is invalid, expired, or has already been used.')
+          setError(
+            reason instanceof Error && reason.message === 'invalid'
+              ? 'This link is invalid, expired, or has already been used.'
+              : 'Your report is temporarily unavailable. Please try again.'
+          )
         }
       }
     })()
@@ -53,7 +67,7 @@ export const PrivateReport = ({ token }: { token: string }) => {
     return () => {
       active = false
     }
-  }, [token])
+  }, [retry, token])
 
   if (error) {
     return (
@@ -61,6 +75,11 @@ export const PrivateReport = ({ token }: { token: string }) => {
         <p className="eyebrow">Report link</p>
         <h1>Report unavailable</h1>
         <p className="lede">{error}</p>
+        {error.includes('temporarily') && (
+          <button type="button" onClick={() => setRetry((value) => value + 1)}>
+            Retry
+          </button>
+        )}
       </main>
     )
   }

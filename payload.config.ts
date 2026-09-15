@@ -1,7 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { postgresAdapter } from '@payloadcms/db-postgres'
 import { buildConfig } from 'payload'
 
 import { Admins } from './server/collections/Admins'
@@ -23,6 +22,7 @@ import { aiEvaluationTask } from './server/jobs/aiEvaluationTask'
 import { categoryAggregationTask } from './server/jobs/categoryAggregationTask'
 import { narrativeTask } from './server/jobs/narrativeTask'
 import { reportEmailTask } from './server/jobs/reportEmailTask'
+import { observedPostgresAdapter } from './server/payload/postgresAdapter'
 
 const baseDir = path.dirname(fileURLToPath(import.meta.url))
 const secret = process.env.PAYLOAD_SECRET
@@ -62,7 +62,7 @@ export default buildConfig({
       handler: publishEndpoint,
     },
   ],
-  db: postgresAdapter({
+  db: observedPostgresAdapter({
     pool: { connectionString },
     migrationDir: path.join(baseDir, 'server', 'migrations'),
     // Explicit opt-in only for the disposable compatibility database.
