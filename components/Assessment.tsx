@@ -9,6 +9,7 @@ import type {
   Report,
   Submission,
 } from '@/lib/assessment/contracts'
+import { REQUIRED_TEXT_MIN_LENGTH } from '@/lib/assessment/contracts'
 import { AssessmentAdapterError } from '@/lib/assessment/adapter'
 import { browserAssessmentAdapter } from '@/lib/assessment/browserAdapter'
 import {
@@ -31,8 +32,13 @@ const emptyAnswer = (): AnswerValue => ({
 const validate = (q: Questionnaire['questions'][number], a: AnswerValue) => {
   if (!q.required && a.state === 'skipped') return ''
   if (a.state !== 'answered') return 'Please add an answer before continuing.'
-  if (q.type === 'text' && !a.text?.trim())
-    return 'Please add an answer before continuing.'
+  if (q.type === 'text') {
+    const text = a.text?.trim()
+
+    if (!text) return 'Please add an answer before continuing.'
+    if (q.required && text.length < REQUIRED_TEXT_MIN_LENGTH)
+      return 'Please tell us a little more before continuing.'
+  }
   if (q.type !== 'text' && !a.selectedOptionKeys.length)
     return 'Choose an answer before continuing.'
   return a.selectedOptionKeys.some(
@@ -76,7 +82,6 @@ export const Assessment = ({
   const [returnToReview, setReturnToReview] = useState(false)
   const [pollingError, setPollingError] = useState('')
   const [pollingRetry, setPollingRetry] = useState(0)
-  const heading = useRef<HTMLHeadingElement>(null)
   const polling = useRef(false)
   const initialisationRequest = useRef(0)
   const processingStartedAt = useRef<number | null>(null)
@@ -137,9 +142,6 @@ export const Assessment = ({
       initialisationRequest.current += 1
     }
   }, [questionnaireId])
-  useEffect(() => {
-    heading.current?.focus()
-  }, [screen, submission?.currentStep])
   useEffect(() => {
     if (
       !submission ||
@@ -313,9 +315,7 @@ export const Assessment = ({
       <main className="assessment-shell assessment-center" data-theme="light">
         <p className="assessment-wordmark">WORKFLOW CHECK</p>
         <p className="assessment-eyebrow">Welcome back</p>
-        <h1 ref={heading} tabIndex={-1}>
-          Continue your assessment
-        </h1>
+        <h1>Continue your assessment</h1>
         <p>
           You have saved answers in {category?.label ?? 'this assessment'}.
           Continue where you left off.
@@ -327,7 +327,7 @@ export const Assessment = ({
           Continue
         </button>
         <Link href="/" className="assessment-link">
-          Back to site
+          Back to home page
         </Link>
       </main>
     )
@@ -363,14 +363,15 @@ export const Assessment = ({
       <main className="assessment-shell" data-theme="light">
         <p className="assessment-wordmark">WORKFLOW CHECK</p>
         <p className="assessment-eyebrow">One extra question</p>
-        <h1 ref={heading} tabIndex={-1}>
-          {submission.clarification.prompt}
-        </h1>
+        <h1>{submission.clarification.prompt}</h1>
         <label htmlFor="clarification-response">Your response</label>
         <textarea
           id="clarification-response"
           value={clarification}
-          onChange={(e) => setClarification(e.target.value)}
+          onChange={(e) => {
+            setClarification(e.target.value)
+            setError('')
+          }}
         />
         {error && <p className="assessment-error">{error}</p>}
         <div className="assessment-actions">
@@ -419,9 +420,7 @@ export const Assessment = ({
       <main className="assessment-shell assessment-review" data-theme="light">
         <p className="assessment-wordmark">WORKFLOW CHECK</p>
         <p className="assessment-eyebrow">Ready to review</p>
-        <h1 ref={heading} tabIndex={-1}>
-          Your answers
-        </h1>
+        <h1>Your answers</h1>
         <p>Check anything you want to change before submitting.</p>
         {questionnaire.categories.map((group) => (
           <section className="assessment-review-group" key={group.key}>
@@ -498,9 +497,7 @@ export const Assessment = ({
         />
       </div>
       <p className="assessment-eyebrow">{category?.label}</p>
-      <h1 ref={heading} tabIndex={-1}>
-        {q.prompt}
-      </h1>
+      <h1>{q.prompt}</h1>
       <p className="assessment-help">
         {q.instructions ??
           (q.required

@@ -1,4 +1,7 @@
-import type { AnswerValue } from '@/lib/assessment/contracts'
+import {
+  REQUIRED_TEXT_MIN_LENGTH,
+  type AnswerValue,
+} from '@/lib/assessment/contracts'
 import type { QuestionnaireDefinition } from '@/server/content/definition'
 
 export const validateAnswer = ({
@@ -30,9 +33,15 @@ export const validateAnswer = ({
       return ['Text questions cannot contain selected options or option text']
     }
 
-    return answer.text?.trim()
-      ? []
-      : ['An answered text question requires text']
+    const text = answer.text?.trim()
+
+    if (!text) return ['An answered text question requires text']
+    if (question.required && text.length < REQUIRED_TEXT_MIN_LENGTH)
+      return [
+        `Required text answers must be at least ${REQUIRED_TEXT_MIN_LENGTH} characters long`,
+      ]
+
+    return []
   }
 
   if (answer.text !== null) {

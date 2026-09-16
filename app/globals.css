@@ -46,9 +46,9 @@ body {
   font-size: 14px;
 }
 main {
-  max-width: 1180px;
+  max-width: 1280px;
   margin: auto;
-  padding: 70px 32px 110px;
+  padding: 70px 40px 110px;
 }
 .narrow {
   max-width: 780px;
@@ -516,9 +516,9 @@ textarea {
 }
 footer {
   border-top: 1px solid var(--line);
-  max-width: 1180px;
+  max-width: 1280px;
   margin: auto;
-  padding: 30px 32px;
+  padding: 30px 40px;
   color: var(--muted);
   font-size: 13px;
 }
@@ -652,10 +652,11 @@ footer {
   color: var(--color-text);
 }
 .assessment-shell {
-  width: 100%;
+  width: calc(100% - 96px);
+  max-width: 1184px;
   min-height: min(760px, calc(100dvh - 150px));
   margin: 32px auto;
-  padding: 32px;
+  padding: 40px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
@@ -719,7 +720,8 @@ footer {
   transition: width 240ms ease-out;
 }
 .assessment-help,
-.assessment-shell > p:not(.assessment-wordmark):not(.assessment-eyebrow) {
+.assessment-shell
+  > p:not(.assessment-wordmark):not(.assessment-eyebrow):not(.error) {
   color: var(--color-text-muted);
   font-size: 0.875rem;
 }
@@ -735,6 +737,7 @@ footer {
   grid-template-columns: 20px 1fr;
   min-height: 48px;
   padding: 12px 16px;
+  cursor: pointer;
   color: var(--color-text);
   border-color: var(--color-border);
   border-radius: var(--radius-pill);
@@ -756,7 +759,15 @@ footer {
 .assessment-shell .option input {
   opacity: 0;
 }
+.assessment-shell .option input[type='radio'],
+.assessment-shell .option input[type='checkbox'] {
+  width: fit-content;
+  min-height: auto;
+  cursor: pointer;
+}
 .assessment-shell .marker {
+  display: grid;
+  place-items: center;
   border-color: var(--color-control-border);
 }
 .assessment-shell .option input:checked + .marker {
@@ -765,6 +776,16 @@ footer {
 .assessment-shell .option input[type='checkbox']:checked + .marker {
   background: var(--color-primary);
   border-color: var(--color-primary);
+}
+.assessment-shell .option input[type='checkbox']:checked + .marker::after {
+  display: block;
+  width: 5px;
+  height: 9px;
+  margin: 0;
+  border: solid var(--color-on-solid);
+  border-width: 0 2px 2px 0;
+  content: '';
+  transform: translateY(-1px) rotate(45deg);
 }
 .assessment-shell .option:has(input:focus-visible) {
   outline: 3px solid var(--color-focus);
@@ -847,8 +868,16 @@ footer {
   font-size: 0.875rem;
   text-align: center;
 }
+.assessment-save.saved {
+  color: var(--color-primary);
+}
+.assessment-save.saved::before {
+  margin-right: 4px;
+  content: '✓';
+}
 .assessment-save.error,
-.assessment-error {
+.assessment-error,
+.assessment-shell .error {
   color: var(--color-danger);
 }
 .assessment-text-button,
@@ -930,12 +959,34 @@ footer {
   padding: 24px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  background: var(--color-bg-subtle);
+  background:
+    radial-gradient(circle at 15% 20%, rgb(0 133 22 / 16%), transparent 42%),
+    radial-gradient(circle at 85% 80%, rgb(0 109 18 / 12%), transparent 40%),
+    var(--color-primary-soft);
+  background-size:
+    140% 140%,
+    140% 140%,
+    auto;
+  animation: assessment-submit-glow 14s ease-in-out infinite alternate;
 }
 .assessment-submit span {
   display: block;
   color: var(--color-text-muted);
   font-size: 0.875rem;
+}
+@keyframes assessment-submit-glow {
+  from {
+    background-position:
+      0 0,
+      100% 100%,
+      0 0;
+  }
+  to {
+    background-position:
+      100% 100%,
+      0 0,
+      0 0;
+  }
 }
 .results {
   width: min(800px, 100%);
@@ -954,6 +1005,12 @@ footer {
 }
 .results .priority {
   padding: 24px;
+  border: 5px solid var(--color-danger);
+}
+.results .priority .score,
+.results .priority .score strong,
+.results .priority .score span {
+  color: var(--color-danger);
 }
 .results .badge {
   color: var(--color-danger);
@@ -975,11 +1032,15 @@ footer {
 @media (max-width: 639px) {
   .assessment-shell,
   .results {
+    width: calc(100% - 40px);
     min-height: auto;
-    margin: 0;
+    margin: 20px auto;
     padding: 20px;
     border: 0;
     border-radius: 0;
+  }
+  main.assessment-shell {
+    width: calc(100% - 56px);
   }
   .assessment-actions {
     grid-template-columns: auto 1fr auto;
@@ -994,6 +1055,12 @@ footer {
   .assessment-submit .assessment-button {
     width: 100%;
     margin-top: 16px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 959px) {
+  main.assessment-shell {
+    width: calc(100% - 80px);
   }
 }
 

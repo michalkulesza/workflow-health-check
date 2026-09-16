@@ -49,6 +49,9 @@ export const QuestionField = ({
   const atLimit = Boolean(
     question.maxSelections && selected.length >= question.maxSelections
   )
+  const showSelectionHelp = Boolean(
+    question.maxSelections && (!question.instructions || atLimit)
+  )
 
   const toggle = (key: string, exclusive: boolean) => {
     const next =
@@ -86,16 +89,17 @@ export const QuestionField = ({
       aria-describedby={
         error
           ? `${question.key}-error`
-          : question.maxSelections
+          : showSelectionHelp
             ? `${question.key}-selection-help`
             : undefined
       }
     >
       <legend className="sr-only">{question.prompt}</legend>
-      {question.maxSelections && (
+      {showSelectionHelp && (
         <p className="assessment-help" id={`${question.key}-selection-help`}>
-          You can choose up to {question.maxSelections} options.
-          {atLimit ? ' Remove a selection to choose another.' : ''}
+          {atLimit
+            ? 'Remove a selection to choose another.'
+            : `You can choose up to ${question.maxSelections} options.`}
         </p>
       )}
       <div className="options">

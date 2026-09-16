@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
+import { QuestionnaireCta } from '@/components/QuestionnaireCta'
+
 import '../globals.css'
 
 export const metadata: Metadata = {
@@ -20,12 +22,7 @@ const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => (
           <Link href="/#how-it-works">How it works</Link>
           <Link href="/#faq">FAQ</Link>
         </nav>
-        <Link
-          className="marketing-button marketing-button--compact"
-          href="/#assessment"
-        >
-          Start the assessment <span aria-hidden="true">→</span>
-        </Link>
+        <QuestionnaireCta />
       </header>
       {children}
       <footer className="site-footer">

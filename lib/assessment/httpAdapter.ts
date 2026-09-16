@@ -37,6 +37,7 @@ const acceptedResponseSchema = z.object({ accepted: z.literal(true) }).strict()
 const sessionResponseSchema = z.object({ csrfToken: z.string().min(1) })
 
 type Fetcher = typeof fetch
+const CLARIFICATION_REQUEST_TIMEOUT_MS = 30_000
 
 export class HttpAssessmentAdapter implements AssessmentAdapter {
   private readonly basePath: string
@@ -152,12 +153,21 @@ export class HttpAssessmentAdapter implements AssessmentAdapter {
     input: ClarificationResponseInput
   ): Promise<ClarificationResponseResult> {
     const parsed = clarificationResponseInputSchema.parse(input)
-
-    return this.request(
-      `/submissions/${encodeURIComponent(parsed.submissionId)}/clarification`,
-      { method: 'POST', body: parsed },
-      clarificationResponseResultSchema
+    const controller = new AbortController()
+    const timeout = setTimeout(
+      () => controller.abort(),
+      CLARIFICATION_REQUEST_TIMEOUT_MS
     )
+
+    try {
+      return await this.request(
+        `/submissions/${encodeURIComponent(parsed.submissionId)}/clarification`,
+        { method: 'POST', body: parsed, signal: controller.signal },
+        clarificationResponseResultSchema
+      )
+    } finally {
+      clearTimeout(timeout)
+    }
   }
 
   async requestNotification(input: NotificationRequest): Promise<void> {
@@ -178,11 +188,16 @@ export class HttpAssessmentAdapter implements AssessmentAdapter {
 
   private async request<T>(
     path: string,
-    options: { body?: unknown; method: 'GET' | 'PATCH' | 'POST' | 'PUT' },
+    options: {
+      body?: unknown
+      method: 'GET' | 'PATCH' | 'POST' | 'PUT'
+      signal?: AbortSignal
+    },
     schema: z.ZodType<T>
   ): Promise<T> {
     const response = await this.fetcher(`${this.basePath}${path}`, {
       method: options.method,
+      signal: options.signal,
       credentials: 'include',
       headers:
         options.body === undefined

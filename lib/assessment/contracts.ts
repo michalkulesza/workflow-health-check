@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+export const REQUIRED_TEXT_MIN_LENGTH = 20
+
 export const questionnaireIdSchema = z.string().uuid()
 export const versionIdSchema = z.string().min(1).max(128)
 export const stableKeySchema = z
