@@ -4,7 +4,7 @@ import type { Payload } from 'payload'
 
 const SESSION_COOKIE = 'assessment_session'
 const CSRF_COOKIE = 'assessment_csrf'
-const SESSION_LIFETIME_MS = 1000 * 60 * 60 * 24 * 30
+const SESSION_LIFETIME_MS = 1000 * 60 * 60 * 24 * 365
 
 const hashToken = (token: string): string =>
   createHash('sha256').update(token).digest('hex')
