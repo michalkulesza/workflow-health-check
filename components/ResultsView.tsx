@@ -80,7 +80,7 @@ export const ResultsView = ({
   }
 
   return (
-    <main className="results" data-theme="light">
+    <main className="results assessment-state-enter" data-theme="light">
       <p className="eyebrow">Your workflow check</p>
       <h1>
         {report.status === 'pending'

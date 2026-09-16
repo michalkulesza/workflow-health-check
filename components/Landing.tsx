@@ -2,29 +2,36 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  ImCheckmark,
+  ImEye,
+  ImMagicWand,
+  ImTarget,
+  ImWrench,
+} from 'react-icons/im'
 
 import type { Landing as LandingContent } from '@/lib/assessment/contracts'
 import { browserAssessmentAdapter } from '@/lib/assessment/browserAdapter'
 
 const benefits = [
   {
-    icon: '↯',
+    icon: ImEye,
     title: 'Understand your workflow',
     text: 'See the patterns behind the work that keeps piling up.',
   },
   {
-    icon: '⌁',
+    icon: ImWrench,
     title: 'Identify friction',
     text: 'Spot where small changes could make your work easier to manage.',
   },
   {
-    icon: '○',
+    icon: ImTarget,
     title: 'Find practical next steps',
     text: 'Get clear, grounded suggestions based on your answers.',
   },
   {
-    icon: '□',
+    icon: ImMagicWand,
     title: 'Made for creative work',
     text: 'A reflective assessment for independent and small creative teams.',
   },
@@ -53,11 +60,17 @@ const faqs = [
   },
 ]
 
-export const Landing = () => {
-  const [landing, setLanding] = useState<LandingContent | null>(null)
-  const [error, setError] = useState('')
+export const Landing = ({
+  initialLanding = null,
+  initialError = '',
+}: {
+  initialLanding?: LandingContent | null
+  initialError?: string
+}) => {
+  const [landing, setLanding] = useState<LandingContent | null>(initialLanding)
+  const [error, setError] = useState(initialError)
 
-  const loadLanding = () => {
+  const loadLanding = useCallback(() => {
     setError('')
 
     void browserAssessmentAdapter
@@ -68,11 +81,13 @@ export const Landing = () => {
           'This assessment is temporarily unavailable. Please try again shortly.'
         )
       )
-  }
+  }, [])
 
   useEffect(() => {
-    loadLanding()
-  }, [])
+    if (!initialLanding && !initialError) {
+      loadLanding()
+    }
+  }, [initialError, initialLanding, loadLanding])
 
   if (error) {
     return (
@@ -114,13 +129,16 @@ export const Landing = () => {
             </Link>
             <ul className="marketing-facts" aria-label="Assessment details">
               <li>
-                <span aria-hidden="true">◷</span>No account required
+                <ImCheckmark aria-hidden="true" />
+                No account required
               </li>
               <li>
-                <span aria-hidden="true">◌</span>Results are shown here
+                <ImCheckmark aria-hidden="true" />
+                Results are shown here
               </li>
               <li>
-                <span aria-hidden="true">⌁</span>Email is optional
+                <ImCheckmark aria-hidden="true" />
+                Email is optional
               </li>
             </ul>
           </div>
@@ -146,7 +164,7 @@ export const Landing = () => {
             {benefits.map((benefit) => (
               <article key={benefit.title} className="benefit-card">
                 <span className="benefit-icon" aria-hidden="true">
-                  {benefit.icon}
+                  <benefit.icon />
                 </span>
                 <h3>{benefit.title}</h3>
                 <p>{benefit.text}</p>
@@ -234,12 +252,14 @@ export const Landing = () => {
           </div>
           <div className="faq-list">
             {faqs.map((faq) => (
-              <details key={faq.question}>
+              <details key={faq.question} name="faq">
                 <summary>
                   {faq.question}
                   <span aria-hidden="true">⌄</span>
                 </summary>
-                <p>{faq.answer}</p>
+                <div className="faq-answer">
+                  <p>{faq.answer}</p>
+                </div>
               </details>
             ))}
           </div>

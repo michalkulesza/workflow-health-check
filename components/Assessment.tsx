@@ -11,6 +11,11 @@ import type {
 } from '@/lib/assessment/contracts'
 import { AssessmentAdapterError } from '@/lib/assessment/adapter'
 import { browserAssessmentAdapter } from '@/lib/assessment/browserAdapter'
+import {
+  MINIMUM_ASSESSMENT_LOADING_DURATION_MS,
+  MINIMUM_RESULTS_PROCESSING_DURATION_MS,
+  waitForMinimumDuration,
+} from '@/lib/assessment/timing'
 import { QuestionField } from './QuestionField'
 import { ResultsView } from './ResultsView'
 
@@ -73,7 +78,11 @@ export const Assessment = ({
   const [pollingRetry, setPollingRetry] = useState(0)
   const heading = useRef<HTMLHeadingElement>(null)
   const polling = useRef(false)
+  const initialisationRequest = useRef(0)
+  const processingStartedAt = useRef<number | null>(null)
   const initialise = async () => {
+    const requestId = ++initialisationRequest.current
+    const loadingStartedAt = Date.now()
     setError('')
     try {
       await adapter.createSession()
@@ -81,10 +90,18 @@ export const Assessment = ({
         adapter.getQuestionnaire(questionnaireId),
         adapter.getResume(questionnaireId),
       ])
+      await waitForMinimumDuration(
+        loadingStartedAt,
+        MINIMUM_ASSESSMENT_LOADING_DURATION_MS
+      )
+      if (requestId !== initialisationRequest.current) {
+        return
+      }
+
       setQuestionnaire(content)
       if (resumed) {
         setSubmission(resumed)
-        setScreen(
+        const nextScreen =
           resumed.state === 'in_progress'
             ? Object.keys(resumed.answers).length
               ? 'resume'
@@ -92,22 +109,33 @@ export const Assessment = ({
             : resumed.state === 'awaiting_clarification'
               ? 'clarification'
               : 'processing'
-        )
-      } else
-        setSubmission(
-          await adapter.createSubmission({
-            questionnaireId,
-            displayedVersionId: content.versionId,
-          })
-        )
+        if (nextScreen === 'processing') {
+          processingStartedAt.current = Date.now()
+        }
+        setScreen(nextScreen)
+      } else {
+        const createdSubmission = await adapter.createSubmission({
+          questionnaireId,
+          displayedVersionId: content.versionId,
+        })
+        if (requestId !== initialisationRequest.current) {
+          return
+        }
+        setSubmission(createdSubmission)
+      }
     } catch {
-      setError(
-        'We could not load this assessment. Check your connection and try again.'
-      )
+      if (requestId === initialisationRequest.current) {
+        setError(
+          'We could not load this assessment. Check your connection and try again.'
+        )
+      }
     }
   }
   useEffect(() => {
     void initialise()
+    return () => {
+      initialisationRequest.current += 1
+    }
   }, [questionnaireId])
   useEffect(() => {
     heading.current?.focus()
@@ -138,6 +166,12 @@ export const Assessment = ({
         }
         if (!active) return
         setReport(next)
+        const startedAt = processingStartedAt.current ?? Date.now()
+        await waitForMinimumDuration(
+          startedAt,
+          MINIMUM_RESULTS_PROCESSING_DURATION_MS
+        )
+        if (!active) return
         setScreen('results')
       } catch {
         if (active) {
@@ -172,7 +206,7 @@ export const Assessment = ({
   if (!questionnaire || !submission)
     return (
       <main
-        className="assessment-shell assessment-center"
+        className="assessment-shell assessment-center assessment-state-enter"
         data-theme="light"
         aria-live="polite"
       >
@@ -265,6 +299,7 @@ export const Assessment = ({
         revision: result.revision,
         state: 'submitted',
       })
+      processingStartedAt.current = Date.now()
       setScreen('processing')
     } catch {
       setSaveState('error')
@@ -299,15 +334,13 @@ export const Assessment = ({
   if (screen === 'processing')
     return (
       <main
-        className="assessment-shell assessment-center"
+        className="assessment-shell assessment-center assessment-state-enter"
         data-theme="light"
         aria-live="polite"
       >
         <span className="assessment-loader" aria-hidden="true" />
         <p className="assessment-eyebrow">Reviewing your answers</p>
-        <h1 ref={heading} tabIndex={-1}>
-          Generating your workflow results
-        </h1>
+        <h1>Generating your workflow results</h1>
         <p>
           We’re preparing your results. You can keep this page open while we
           finish.
@@ -362,6 +395,7 @@ export const Assessment = ({
                   state: 'processing',
                   clarification: null,
                 })
+                processingStartedAt.current = Date.now()
                 setScreen('processing')
               } catch {
                 setSaveState('error')
