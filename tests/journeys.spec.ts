@@ -7,6 +7,8 @@ test('public assessment pages are accessible, noindex, and free of prototype con
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 })
+  // Skip enter animations so axe measures final colours, not mid-fade ones.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
 
   await expect(page.getByRole('main')).toBeVisible()
