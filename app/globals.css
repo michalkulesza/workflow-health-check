@@ -1326,7 +1326,8 @@ footer {
   line-height: 1.05;
 }
 .report-example small {
-  color: var(--color-text-muted);
+  /* Darker than --color-text-muted so it holds 4.5:1 over the orbs. */
+  color: #434c5c;
   font-size: 0.6875rem;
 }
 .report-example__details h3 {
@@ -1342,7 +1343,8 @@ footer {
   font-size: 0.75rem;
 }
 .report-example__details b {
-  color: var(--color-accent);
+  /* Darker than --color-accent so it holds 4.5:1 over the orbs. */
+  color: #0043ad;
 }
 .report-example__details span {
   display: flex;
