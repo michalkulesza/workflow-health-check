@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import { AssessmentAdapterError } from '@/lib/assessment/adapter'
 import { browserAssessmentAdapter } from '@/lib/assessment/browserAdapter'
 import { emailSchema } from '@/lib/assessment/contracts'
+import { createMutationId } from '@/lib/assessment/mutationId'
 
 interface ContactStepProps {
   submissionId: string
@@ -23,7 +24,7 @@ export const ContactStep = ({
   const [error, setError] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
-  const idempotencyKey = useRef(crypto.randomUUID())
+  const idempotencyKey = useRef(createMutationId())
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()

@@ -12,6 +12,7 @@ import type {
 import { REQUIRED_TEXT_MIN_LENGTH } from '@/lib/assessment/contracts'
 import { AssessmentAdapterError } from '@/lib/assessment/adapter'
 import { browserAssessmentAdapter } from '@/lib/assessment/browserAdapter'
+import { createMutationId } from '@/lib/assessment/mutationId'
 import {
   MINIMUM_ASSESSMENT_LOADING_DURATION_MS,
   MINIMUM_RESULTS_PROCESSING_DURATION_MS,
@@ -238,7 +239,7 @@ export const Assessment = ({
         submissionId: submission.submissionId,
         questionKey: q.key,
         expectedRevision: submission.revision,
-        mutationId: crypto.randomUUID(),
+        mutationId: createMutationId(),
         answer,
       })
       const saved = await adapter.saveProgress({
@@ -294,7 +295,7 @@ export const Assessment = ({
       const result = await adapter.submitSubmission({
         submissionId: submission.submissionId,
         expectedRevision: submission.revision,
-        mutationId: crypto.randomUUID(),
+        mutationId: createMutationId(),
       })
       setSubmission({
         ...submission,
