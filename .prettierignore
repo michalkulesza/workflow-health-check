@@ -7,3 +7,6 @@ package-lock.json
 next-env.d.ts
 tsconfig.json
 *.md
+
+app/(payload)/admin/importMap.js
+payload-types.ts
