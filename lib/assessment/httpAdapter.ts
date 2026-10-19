@@ -154,6 +154,7 @@ export class HttpAssessmentAdapter implements AssessmentAdapter {
   ): Promise<ClarificationResponseResult> {
     const parsed = clarificationResponseInputSchema.parse(input)
     const controller = new AbortController()
+
     const timeout = setTimeout(
       () => controller.abort(),
       CLARIFICATION_REQUEST_TIMEOUT_MS

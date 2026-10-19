@@ -6,7 +6,9 @@ import { usePathname } from 'next/navigation'
 export const QuestionnaireCta = () => {
   const pathname = usePathname()
 
-  if (pathname.startsWith('/q/')) return null
+  if (pathname.startsWith('/q/')) {
+    return null
+  }
 
   return (
     <Link

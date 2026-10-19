@@ -22,8 +22,10 @@ export const PrivateReport = ({ token }: { token: string }) => {
     void (async () => {
       try {
         setError('')
+
         if (!exchangeAttempted.current) {
           exchangeAttempted.current = true
+
           const exchange = await fetch(
             '/api/assessment/v1/report-grants/exchange',
             {

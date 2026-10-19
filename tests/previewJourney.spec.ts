@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
 const shouldRun = process.env.RUN_PREVIEW_JOURNEY === 'true'
+
 const shouldRunClarification =
   shouldRun && process.env.RUN_PREVIEW_CLARIFICATION === 'true'
 const questionnaireID = process.env.E2E_QUESTIONNAIRE_ID ?? ''
@@ -76,6 +77,7 @@ const completeJourney = async ({
   await expect(
     page.getByRole('heading', { name: 'Your answers' })
   ).toBeVisible()
+
   await assertAccessible(page)
 
   await page.getByRole('button', { name: 'See my results' }).click()
@@ -86,17 +88,20 @@ const completeJourney = async ({
         name: 'What changed after you tried to improve this?',
       })
     ).toBeVisible({ timeout: 90_000 })
+
     await assertAccessible(page)
 
     await page
       .locator('textarea')
       .fill('The fictional follow-up produced a visible handoff improvement.')
+
     await page.getByRole('button', { name: 'Continue analysis' }).click()
   }
 
   await expect(page.getByRole('button', { name: 'Request help' })).toBeVisible({
     timeout: 90_000,
   })
+
   await assertAccessible(page)
 
   const notificationEmail = page.getByLabel('Email for the report notification')
@@ -113,13 +118,16 @@ const completeJourney = async ({
   }
 
   await page.getByRole('button', { name: 'Request help' }).click()
+
   await expect(
     page.getByRole('heading', { name: /Tell us where you.*like help/i })
   ).toBeVisible()
+
   await assertAccessible(page)
 
   await page.getByLabel(/email required/i).fill('preview-contact@example.test')
   await page.getByLabel(/name optional/i).fill('Preview verification')
+
   await page
     .getByLabel(/what would you like help with/i)
     .fill('Fictional request used only for disposable-preview verification.')
@@ -155,7 +163,9 @@ test.describe('configured preview assessment journey', () => {
       !shouldRunClarification,
       'Set RUN_PREVIEW_CLARIFICATION=true when the preview provider requests clarification.'
     )
+
     test.setTimeout(300_000)
+
     await completeJourney({
       page,
       viewport: { width: 1440, height: 900 },

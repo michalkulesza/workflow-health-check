@@ -32,6 +32,7 @@ export const createTestGeminiProvider = (): GeminiProvider | null => {
       const clarification = request.answers.find((answer) =>
         answer.questionKey.startsWith('clarification-')
       )
+
       const evidence = request.answers.find(
         (answer) => answer.questionKey === 'q11'
       )

@@ -35,11 +35,15 @@ export const validateAnswer = ({
 
     const text = answer.text?.trim()
 
-    if (!text) return ['An answered text question requires text']
-    if (question.required && text.length < REQUIRED_TEXT_MIN_LENGTH)
+    if (!text) {
+      return ['An answered text question requires text']
+    }
+
+    if (question.required && text.length < REQUIRED_TEXT_MIN_LENGTH) {
       return [
         `Required text answers must be at least ${REQUIRED_TEXT_MIN_LENGTH} characters long`,
       ]
+    }
 
     return []
   }

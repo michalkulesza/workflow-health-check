@@ -46,9 +46,11 @@ export const QuestionField = ({
 
   const selected = value.state === 'answered' ? value.selectedOptionKeys : []
   const optionText = value.state === 'answered' ? value.optionText : {}
+
   const atLimit = Boolean(
     question.maxSelections && selected.length >= question.maxSelections
   )
+
   const showSelectionHelp = Boolean(
     question.maxSelections && (!question.instructions || atLimit)
   )

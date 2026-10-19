@@ -38,7 +38,6 @@ const validateEvidence = (
   evidence.every(({ questionKey, excerpt }) =>
     permitted.get(questionKey)?.includes(excerpt)
   )
-
 const MAX_PROVIDER_ATTEMPTS = 3
 
 const providerOutput = (
@@ -175,15 +174,18 @@ export const runAIEvaluation = async ({
            ON CONFLICT (scoring_run_id, evaluation_key) DO UPDATE SET attempts = scoring_ai_evaluations.attempts + $3, updated_at = now()`,
           [runID, evaluation.key, MAX_PROVIDER_ATTEMPTS]
         )
+
         await client.query(
           `UPDATE scoring_runs SET state = 'partial', report = $2::jsonb, updated_at = now() WHERE id = $1`,
           [runID, JSON.stringify(report)]
         )
+
         await client.query(
           `UPDATE submissions SET state = 'partial', updated_at = now()
             WHERE id = (SELECT submission_id FROM scoring_runs WHERE id = $1)`,
           [runID]
         )
+
         await client.query(
           `UPDATE assessment_outbox SET state = 'completed', updated_at = now() WHERE id = $1`,
           [outboxID]

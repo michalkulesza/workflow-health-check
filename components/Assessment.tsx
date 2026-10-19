@@ -24,24 +24,39 @@ import { ResultsView } from './ResultsView'
 type Screen =
   'question' | 'resume' | 'review' | 'processing' | 'clarification' | 'results'
 const adapter = browserAssessmentAdapter
+
 const emptyAnswer = (): AnswerValue => ({
   state: 'skipped',
   selectedOptionKeys: [],
   text: null,
   optionText: {},
 })
+
 const validate = (q: Questionnaire['questions'][number], a: AnswerValue) => {
-  if (!q.required && a.state === 'skipped') return ''
-  if (a.state !== 'answered') return 'Please add an answer before continuing.'
+  if (!q.required && a.state === 'skipped') {
+    return ''
+  }
+
+  if (a.state !== 'answered') {
+    return 'Please add an answer before continuing.'
+  }
+
   if (q.type === 'text') {
     const text = a.text?.trim()
 
-    if (!text) return 'Please add an answer before continuing.'
-    if (q.required && text.length < REQUIRED_TEXT_MIN_LENGTH)
+    if (!text) {
+      return 'Please add an answer before continuing.'
+    }
+
+    if (q.required && text.length < REQUIRED_TEXT_MIN_LENGTH) {
       return 'Please tell us a little more before continuing.'
+    }
   }
-  if (q.type !== 'text' && !a.selectedOptionKeys.length)
+
+  if (q.type !== 'text' && !a.selectedOptionKeys.length) {
     return 'Choose an answer before continuing.'
+  }
+
   return a.selectedOptionKeys.some(
     (key) =>
       q.options.find((o) => o.key === key)?.requiresText &&
@@ -50,15 +65,27 @@ const validate = (q: Questionnaire['questions'][number], a: AnswerValue) => {
     ? 'Please add details for the selected option.'
     : ''
 }
+
 const summary = (q: Questionnaire['questions'][number], a?: AnswerValue) => {
-  if (!a || a.state === 'skipped') return 'Skipped'
-  if (q.type === 'text') return a.text?.trim() || 'Skipped'
+  if (!a || a.state === 'skipped') {
+    return 'Skipped'
+  }
+
+  if (q.type === 'text') {
+    return a.text?.trim() || 'Skipped'
+  }
+
   return (
     a.selectedOptionKeys
       .flatMap((key) => {
         const option = q.options.find((item) => item.key === key)
-        if (!option) return []
+
+        if (!option) {
+          return []
+        }
+
         const detail = a.optionText[key]?.trim()
+
         return detail ? `${option.label}: ${detail}` : option.label
       })
       .join(', ') || 'Skipped'
@@ -75,6 +102,7 @@ export const Assessment = ({
   const [screen, setScreen] = useState<Screen>('question')
   const [drafts, setDrafts] = useState<Record<string, AnswerValue>>({})
   const [error, setError] = useState('')
+
   const [saveState, setSaveState] = useState<
     'idle' | 'saving' | 'saved' | 'error'
   >('idle')
@@ -86,27 +114,34 @@ export const Assessment = ({
   const polling = useRef(false)
   const initialisationRequest = useRef(0)
   const processingStartedAt = useRef<number | null>(null)
+
   const initialise = async () => {
     const requestId = ++initialisationRequest.current
     const loadingStartedAt = Date.now()
     setError('')
+
     try {
       await adapter.createSession()
+
       const [content, resumed] = await Promise.all([
         adapter.getQuestionnaire(questionnaireId),
         adapter.getResume(questionnaireId),
       ])
+
       await waitForMinimumDuration(
         loadingStartedAt,
         MINIMUM_ASSESSMENT_LOADING_DURATION_MS
       )
+
       if (requestId !== initialisationRequest.current) {
         return
       }
 
       setQuestionnaire(content)
+
       if (resumed) {
         setSubmission(resumed)
+
         const nextScreen =
           resumed.state === 'in_progress'
             ? Object.keys(resumed.answers).length
@@ -115,18 +150,22 @@ export const Assessment = ({
             : resumed.state === 'awaiting_clarification'
               ? 'clarification'
               : 'processing'
+
         if (nextScreen === 'processing') {
           processingStartedAt.current = Date.now()
         }
+
         setScreen(nextScreen)
       } else {
         const createdSubmission = await adapter.createSubmission({
           questionnaireId,
           displayedVersionId: content.versionId,
         })
+
         if (requestId !== initialisationRequest.current) {
           return
         }
+
         setSubmission(createdSubmission)
       }
     } catch {
@@ -137,44 +176,70 @@ export const Assessment = ({
       }
     }
   }
+
   useEffect(() => {
     void initialise()
+
     return () => {
       initialisationRequest.current += 1
     }
   }, [questionnaireId])
+
   useEffect(() => {
     if (
       !submission ||
       !['submitted', 'processing', 'ready', 'partial', 'failed'].includes(
         submission.state
       )
-    )
+    ) {
       return
+    }
+
     let active = true
+
     const refresh = async () => {
-      if (polling.current) return
+      if (polling.current) {
+        return
+      }
+
       polling.current = true
+
       try {
         const next = await adapter.getReport(submission.submissionId)
-        if (!active) return
+
+        if (!active) {
+          return
+        }
+
         setPollingError('')
+
         if (next.status === 'pending') {
           const current = await adapter.getSubmission(submission.submissionId)
+
           if (active && current.state === 'awaiting_clarification') {
             setSubmission(current)
             setScreen('clarification')
+
             return
           }
         }
-        if (!active) return
+
+        if (!active) {
+          return
+        }
+
         setReport(next)
         const startedAt = processingStartedAt.current ?? Date.now()
+
         await waitForMinimumDuration(
           startedAt,
           MINIMUM_RESULTS_PROCESSING_DURATION_MS
         )
-        if (!active) return
+
+        if (!active) {
+          return
+        }
+
         setScreen('results')
       } catch {
         if (active) {
@@ -188,12 +253,14 @@ export const Assessment = ({
     }
     void refresh()
     const timer = window.setInterval(() => void refresh(), 3000)
+
     return () => {
       active = false
       window.clearInterval(timer)
     }
   }, [pollingRetry, submission])
-  if (error && !questionnaire)
+
+  if (error && !questionnaire) {
     return (
       <main className="assessment-shell assessment-center" data-theme="light">
         <h1>Assessment unavailable</h1>
@@ -206,7 +273,9 @@ export const Assessment = ({
         </Link>
       </main>
     )
-  if (!questionnaire || !submission)
+  }
+
+  if (!questionnaire || !submission) {
     return (
       <main
         className="assessment-shell assessment-center assessment-state-enter"
@@ -218,22 +287,34 @@ export const Assessment = ({
         <p>Loading your questions…</p>
       </main>
     )
+  }
+
   const q = questionnaire.questions[submission.currentStep]
+
   const category = questionnaire.categories.find(
     (item) => item.key === q?.categoryKey
   )
+
   const answer = q
     ? (drafts[q.key] ?? submission.answers[q.key] ?? emptyAnswer())
     : emptyAnswer()
+
   const save = async (nextStep: number) => {
-    if (!q) return false
-    const message = validate(q, answer)
-    if (message) {
-      setError(message)
+    if (!q) {
       return false
     }
+
+    const message = validate(q, answer)
+
+    if (message) {
+      setError(message)
+
+      return false
+    }
+
     setSaveState('saving')
     setError('')
+
     try {
       const result = await adapter.saveAnswer({
         submissionId: submission.submissionId,
@@ -242,18 +323,23 @@ export const Assessment = ({
         mutationId: createMutationId(),
         answer,
       })
+
       const saved = await adapter.saveProgress({
         submissionId: submission.submissionId,
         currentStep: nextStep,
         expectedRevision: result.revision,
       })
       setSubmission(saved)
+
       setDrafts((all) => {
         const next = { ...all }
         delete next[q.key]
+
         return next
       })
+
       setSaveState('saved')
+
       return true
     } catch (reason) {
       if (
@@ -262,56 +348,71 @@ export const Assessment = ({
       ) {
         const latest = await adapter.getSubmission(submission.submissionId)
         setSubmission(latest)
+
         setDrafts((all) => ({
           ...all,
           [q.key]: latest.answers[q.key] ?? answer,
         }))
+
         setError(
           'This assessment changed in another tab. Your latest saved answer has been restored.'
         )
-      } else
+      } else {
         setError(
           'We couldn’t save your answer. Your input is still here—please retry.'
         )
+      }
+
       setSaveState('error')
+
       return false
     }
   }
+
   const next = async () => {
     const last = submission.currentStep === questionnaire.questions.length - 1
+
     if (
       await save(last ? submission.currentStep : submission.currentStep + 1)
     ) {
       if (returnToReview) {
         setReturnToReview(false)
         setScreen('review')
-      } else if (last) setScreen('review')
+      } else if (last) {
+        setScreen('review')
+      }
     }
   }
+
   const submit = async () => {
     setSaveState('saving')
     setError('')
+
     try {
       const result = await adapter.submitSubmission({
         submissionId: submission.submissionId,
         expectedRevision: submission.revision,
         mutationId: createMutationId(),
       })
+
       setSubmission({
         ...submission,
         revision: result.revision,
         state: 'submitted',
       })
+
       processingStartedAt.current = Date.now()
       setScreen('processing')
     } catch {
       setSaveState('error')
+
       setError(
         'We couldn’t submit your assessment. Your answers are still saved—please retry.'
       )
     }
   }
-  if (screen === 'resume')
+
+  if (screen === 'resume') {
     return (
       <main className="assessment-shell assessment-center" data-theme="light">
         <p className="assessment-wordmark">WORKFLOW CHECK</p>
@@ -332,7 +433,9 @@ export const Assessment = ({
         </Link>
       </main>
     )
-  if (screen === 'processing')
+  }
+
+  if (screen === 'processing') {
     return (
       <main
         className="assessment-shell assessment-center assessment-state-enter"
@@ -359,7 +462,9 @@ export const Assessment = ({
         )}
       </main>
     )
-  if (screen === 'clarification' && submission.clarification)
+  }
+
+  if (screen === 'clarification' && submission.clarification) {
     return (
       <main className="assessment-shell" data-theme="light">
         <p className="assessment-wordmark">WORKFLOW CHECK</p>
@@ -383,24 +488,30 @@ export const Assessment = ({
             onClick={async () => {
               if (!clarification.trim()) {
                 setError('Please add a specific example before continuing.')
+
                 return
               }
+
               setSaveState('saving')
+
               try {
                 await adapter.submitClarification({
                   submissionId: submission.submissionId,
                   evaluationKey: submission.clarification!.evaluationKey,
                   response: clarification,
                 })
+
                 setSubmission({
                   ...submission,
                   state: 'processing',
                   clarification: null,
                 })
+
                 processingStartedAt.current = Date.now()
                 setScreen('processing')
               } catch {
                 setSaveState('error')
+
                 setError(
                   'We couldn’t save that response. Your input is still here—please retry.'
                 )
@@ -412,11 +523,15 @@ export const Assessment = ({
         </div>
       </main>
     )
-  if (screen === 'results' && report)
+  }
+
+  if (screen === 'results' && report) {
     return (
       <ResultsView report={report} submissionId={submission.submissionId} />
     )
-  if (screen === 'review')
+  }
+
+  if (screen === 'review') {
     return (
       <main className="assessment-shell assessment-review" data-theme="light">
         <p className="assessment-wordmark">WORKFLOW CHECK</p>
@@ -443,6 +558,7 @@ export const Assessment = ({
                         ...submission,
                         currentStep: item.number - 1,
                       })
+
                       setReturnToReview(true)
                       setScreen('question')
                     }}
@@ -469,12 +585,16 @@ export const Assessment = ({
         </div>
       </main>
     )
-  if (!q)
+  }
+
+  if (!q) {
     return (
       <main className="assessment-shell assessment-center" data-theme="light">
         <h1>Assessment complete</h1>
       </main>
     )
+  }
+
   return (
     <main className="assessment-shell" data-theme="light">
       <header className="assessment-header">
@@ -524,6 +644,7 @@ export const Assessment = ({
                 ...submission,
                 currentStep: submission.currentStep - 1,
               })
+
               setError('')
             }}
           >

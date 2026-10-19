@@ -10,6 +10,7 @@ import { publishQuestionnaire } from '@/server/content/publishQuestionnaire'
 import { runReportEmail } from '@/server/jobs/reportEmailTask'
 
 const ORIGIN = 'http://assessment.test'
+
 const fixtureText =
   'I repeatedly chase approvals in scattered messages and lose the current project status.'
 
@@ -23,7 +24,6 @@ let versionID: string
 
 const request = (path: string, init?: RequestInit) =>
   new Request(`${ORIGIN}${path}`, init)
-
 const routeParams = (id: string) => ({ params: Promise.resolve({ id }) })
 
 const workerCycle = async () => {
@@ -56,6 +56,7 @@ const completeWorkerRun = async () => {
 const createSession = async (): Promise<Session> => {
   const { POST } =
     await import('@/app/(frontend)/api/assessment/v1/sessions/route')
+
   const response = await POST(
     request('/api/assessment/v1/sessions', {
       headers: { origin: ORIGIN },
@@ -63,6 +64,7 @@ const createSession = async (): Promise<Session> => {
     })
   )
   const body = (await response.json()) as { csrfToken: string }
+
   const token = /assessment_session=([^;]+)/.exec(
     response.headers.get('set-cookie') ?? ''
   )?.[1]
@@ -78,8 +80,10 @@ const createJourney = async (
   displayedVersionID = versionID
 ): Promise<Journey> => {
   const session = await createSession()
+
   const { POST } =
     await import('@/app/(frontend)/api/assessment/v1/submissions/route')
+
   const response = await POST(
     request('/api/assessment/v1/submissions', {
       body: JSON.stringify({
@@ -193,6 +197,7 @@ const saveAllAnswers = async (journey: Journey) => {
 const submitJourney = async (journey: Journey, revision: number) => {
   const { POST } =
     await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/submit/route')
+
   const response = await POST(
     request(`/api/assessment/v1/submissions/${journey.submissionID}/submit`, {
       body: JSON.stringify({
@@ -211,6 +216,7 @@ const submitJourney = async (journey: Journey, revision: number) => {
   )
 
   expect(response.status).toBe(202)
+
   return (await response.json()) as { runId: string }
 }
 
@@ -219,12 +225,14 @@ beforeAll(async () => {
 
   payload = await getPayload({ config })
   questionnaireID = randomUUID()
+
   const questionnaire = await payload.create({
     collection: 'questionnaires',
     data: { name: 'Complete journey integration', publicId: questionnaireID },
     overrideAccess: true,
   })
   const definition = createFoundationDefinition('fixture-model')
+
   const draft = await payload.create({
     collection: 'questionnaire-versions',
     data: {
@@ -245,6 +253,7 @@ beforeAll(async () => {
     data: { draftVersion: draft.id },
     overrideAccess: true,
   })
+
   const published = await publishQuestionnaire({
     payload,
     questionnaireID: questionnaire.id,
@@ -286,6 +295,7 @@ describe('complete 16-question assessment journey', () => {
     )
 
     expect(result.rows).toHaveLength(1)
+
     expect(result.rows[0]).toMatchObject({
       answer_snapshot: { q11: { text: fixtureText } },
       questionnaire_version_id: Number(journey.versionID),
@@ -306,6 +316,7 @@ describe('complete 16-question assessment journey', () => {
         WHERE scoring_run_id = $1 ORDER BY category_key`,
       [submitted.runId]
     )
+
     const scoreByCategory = Object.fromEntries(
       scores.rows.map((score) => [
         score.category_key,
@@ -316,6 +327,7 @@ describe('complete 16-question assessment journey', () => {
     expect(scoreByCategory.project).toMatchObject({ normalized: 0, points: 0 })
     expect(scoreByCategory.people?.normalized).toBeCloseTo(1 / 22)
     expect(scoreByCategory.admin).toMatchObject({ normalized: 0.05, points: 1 })
+
     expect(scoreByCategory.friction).toMatchObject({
       normalized: 0.25,
       points: 5,
@@ -323,6 +335,7 @@ describe('complete 16-question assessment journey', () => {
 
     const { GET: getReport } =
       await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/report/route')
+
     const report = await getReport(
       request(`/api/assessment/v1/submissions/${journey.submissionID}/report`, {
         headers: { cookie: journey.session.cookie },
@@ -331,12 +344,14 @@ describe('complete 16-question assessment journey', () => {
     )
 
     expect(report.status).toBe(200)
+
     expect((await report.json()) as { status: string }).toMatchObject({
       status: 'complete',
     })
 
     const { POST: captureContact } =
       await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/contact/route')
+
     const contactRequest = () =>
       captureContact(
         request(
@@ -400,6 +415,7 @@ describe('complete 16-question assessment journey', () => {
       },
       overrideAccess: true,
     })
+
     const updatedLead = await payload.findByID({
       collection: 'leads',
       id: leadID,
@@ -424,6 +440,7 @@ describe('complete 16-question assessment journey', () => {
 
     const { POST: submitClarification } =
       await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/clarification/route')
+
     const clarificationRequest = () =>
       submitClarification(
         request(
@@ -444,7 +461,6 @@ describe('complete 16-question assessment journey', () => {
         ),
         routeParams(journey.submissionID)
       )
-
     const accepted = await clarificationRequest()
     expect(accepted.status).toBe(202)
     expect((await clarificationRequest()).status).toBe(409)
@@ -465,6 +481,7 @@ describe('complete 16-question assessment journey', () => {
     )
 
     expect(evaluation.rows).toHaveLength(1)
+
     expect(evaluation.rows[0]).toMatchObject({
       attempts: '2',
       clarification_response:
@@ -481,6 +498,7 @@ describe('complete 16-question assessment journey', () => {
 
     const { POST: requestNotification } =
       await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/notification/route')
+
     const response = await requestNotification(
       request(
         `/api/assessment/v1/submissions/${journey.submissionID}/notification`,
@@ -551,6 +569,7 @@ describe('complete 16-question assessment journey', () => {
     const originalEmailFrom = process.env.EMAIL_FROM
     const originalOrigin = process.env.APP_ORIGIN
     const originalPepper = process.env.REPORT_TOKEN_PEPPER
+
     const captured: {
       from: string
       html: string
@@ -571,6 +590,7 @@ describe('complete 16-question assessment journey', () => {
         resend: {
           async send(email) {
             captured.push(email)
+
             return { id: 'captured-report-ready-email' }
           },
         },
@@ -663,12 +683,14 @@ describe('complete 16-question assessment journey', () => {
   it('pins an in-progress submission to its original publication after a review edit', async () => {
     const originalJourney = await createJourney()
     const initialRevision = await saveAllAnswers(originalJourney)
+
     const originalDraft = await payload.findByID({
       collection: 'questionnaire-versions',
       id: draftVersionID,
       depth: 0,
       overrideAccess: true,
     })
+
     const originalQuestion = originalDraft.questions?.find(
       (question) => question.key === 'q11'
     )
@@ -689,6 +711,7 @@ describe('complete 16-question assessment journey', () => {
       },
       overrideAccess: true,
     })
+
     const questionnaireResult = await payload.find({
       collection: 'questionnaires',
       where: { publicId: { equals: questionnaireID } },
@@ -709,8 +732,10 @@ describe('complete 16-question assessment journey', () => {
 
     const { PUT: saveAnswer } =
       await import('@/app/(frontend)/api/assessment/v1/submissions/[id]/answers/[questionKey]/route')
+
     const revisedText =
       'I now keep approvals in one shared project-status record.'
+
     const saved = await saveAnswer(
       request(
         `/api/assessment/v1/submissions/${originalJourney.submissionID}/answers/q11`,
@@ -756,6 +781,7 @@ describe('complete 16-question assessment journey', () => {
     expect(pinned.rows).toHaveLength(1)
     expect(pinned.rows[0]?.answer_snapshot.q11.text).toBe(revisedText)
     expect(pinned.rows[0]?.questionnaire_version_id).toBe(Number(versionID))
+
     expect(
       pinned.rows[0]?.definition_snapshot.questions.find(
         (question) => question.key === 'q11'
@@ -763,12 +789,14 @@ describe('complete 16-question assessment journey', () => {
     ).toBe(originalQuestion.prompt)
 
     const newJourney = await createJourney(String(published.publishedVersionID))
+
     const newSubmission = await payload.db.pool.query<{
       questionnaire_version_id: number
     }>(
       'SELECT questionnaire_version_id FROM submissions WHERE external_id = $1',
       [newJourney.submissionID]
     )
+
     expect(newSubmission.rows).toEqual([
       { questionnaire_version_id: published.publishedVersionID },
     ])
